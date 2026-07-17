@@ -4,14 +4,14 @@
 //! See this crate's `CLAUDE.md` and the root `CLAUDE.md` for the invariants.
 //!
 //! Planned modules (created per ROADMAP task — do not pre-create):
-//! - `mask`       (T1-4) tiered feathered star masks
-//! - `gate`       (T1-5) sky-mask gating / INV-1 compositor
 //! - `reduce`     (T1-6, T1-7) morphological + resynthesis star reduction
 //! - `enhance`    (Phase 2) glow / luminosity lift / color recovery
 //! - `decompose`  (Phase 2) starless / stars-only
 
 pub mod background;
 pub mod detect;
+pub mod gate;
+pub mod mask;
 pub mod types;
 
 /// Errors from this crate's algorithms.

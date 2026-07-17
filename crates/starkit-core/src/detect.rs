@@ -106,6 +106,19 @@ pub struct Detection {
     pub snr: f64,
 }
 
+/// How far the detection filter reaches, in pixels.
+///
+/// Exposed because [`crate::gate::restrict_to_sky`] must exclude a band at least
+/// this wide around a silhouette: a pixel whose kernel footprint touches the
+/// foreground has its contrast measured against it, which is what produces
+/// phantom stars along every branch (D-019/D-034). Deriving the two from one
+/// function is what stops the mask margin and the kernel from drifting apart —
+/// a margin quietly smaller than the reach looks like it works and does not.
+pub fn filter_reach_px(fwhm_guess: f64) -> f64 {
+    let sigma = fwhm_guess / 2.354_820_045_030_949_4;
+    (3.0 * sigma).ceil().max(1.0)
+}
+
 /// A normalised 1-D Gaussian kernel, truncated at 3σ.
 fn gaussian_kernel(sigma: f64) -> Vec<f64> {
     let radius = (3.0 * sigma).ceil().max(1.0) as usize;

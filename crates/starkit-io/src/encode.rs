@@ -46,6 +46,47 @@ fn delinearize(pixels: &[f32], trc: &Trc) -> Vec<u16> {
         .collect()
 }
 
+/// Encode a single-channel plane as a 16-bit grayscale TIFF (FR-4).
+///
+/// `plane` is `width * height` in `[0, 1]`; a mask is a coverage fraction, not a
+/// photometric quantity, so **no tone curve is applied** — 1.0 means "fully
+/// selected" and must land on 65535, not on whatever a gamma would make of it.
+/// Photoshop reads this straight in as a layer mask.
+///
+/// No ICC is attached for the same reason: a mask has no colour space, and
+/// tagging it with the image's would invite a reader to transform it.
+pub fn encode_gray16(plane: &[f32], width: u32, height: u32, path: &Path) -> Result<Vec<u8>> {
+    use tiff::encoder::{colortype, TiffEncoder};
+
+    let expected = width as usize * height as usize;
+    if plane.len() != expected {
+        return Err(IoError::layout(
+            path,
+            format!("mask has {} samples, expected {expected}", plane.len()),
+        ));
+    }
+    let samples: Vec<u16> = plane
+        .iter()
+        .map(|v| (*v as f64 * 65535.0).round().clamp(0.0, 65535.0) as u16)
+        .collect();
+
+    let io = |e: tiff::TiffError| IoError::decode("tiff", path, e);
+    let mut buf = Cursor::new(Vec::new());
+    {
+        let mut enc = TiffEncoder::new(&mut buf).map_err(io)?;
+        enc.write_image::<colortype::Gray16>(width, height, &samples)
+            .map_err(io)?;
+    }
+    Ok(buf.into_inner())
+}
+
+/// Encode a mask and write it atomically.
+pub fn write_gray16(plane: &[f32], width: u32, height: u32, path: impl AsRef<Path>) -> Result<()> {
+    let path = path.as_ref();
+    let bytes = encode_gray16(plane, width, height, path)?;
+    crate::atomic::atomic_write(path, &bytes)
+}
+
 fn write_tiff(img: &Image, samples: &[u16], path: &Path) -> Result<Vec<u8>> {
     use tiff::encoder::{colortype, TiffEncoder};
     use tiff::tags::Tag;

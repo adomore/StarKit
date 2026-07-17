@@ -20,7 +20,7 @@ pub mod icc;
 pub mod image;
 
 pub use atomic::atomic_write;
-pub use decode::{decode, decode_bytes, Format};
-pub use encode::{encode_tiff16, write_tiff16};
+pub use decode::{decode, decode_bytes, decode_mask, Format};
+pub use encode::{encode_gray16, encode_tiff16, write_gray16, write_tiff16};
 pub use error::{IoError, Result};
 pub use image::{Exif, Image, Meta};

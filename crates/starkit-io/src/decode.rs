@@ -55,6 +55,123 @@ pub fn decode(path: impl AsRef<Path>) -> Result<Image> {
     decode_bytes(&bytes, path)
 }
 
+/// Import an external grayscale mask (FR-3's manual path).
+///
+/// Returns coverage in `[0, 1]`, row-major, plus its dimensions. Accepts 8- or
+/// 16-bit grayscale and RGB — a mask painted in Photoshop and saved without
+/// flattening to grayscale is the normal case, not an error, so an RGB file is
+/// read via its first channel rather than rejected.
+///
+/// **No tone curve is applied.** A mask is a coverage fraction, not light: 50 %
+/// grey means half-selected, and running it through an sRGB curve would silently
+/// turn that into 21 %.
+pub fn decode_mask(path: impl AsRef<Path>) -> Result<(Vec<f32>, u32, u32)> {
+    let path = path.as_ref();
+    let bytes = std::fs::read(path).map_err(|e| IoError::io(path, e))?;
+    match Format::sniff(&bytes) {
+        Some(Format::Png) => decode_mask_png(&bytes, path),
+        Some(Format::Tiff) => decode_mask_tiff(&bytes, path),
+        Some(Format::Jpeg) => Err(IoError::layout(
+            path,
+            "a JPEG mask is lossy: its blocking artifacts would move the gate              boundary. Export the mask as PNG or TIFF.",
+        )),
+        None => Err(IoError::layout(path, "unrecognised mask file type")),
+    }
+}
+
+fn decode_mask_png(bytes: &[u8], path: &Path) -> Result<(Vec<f32>, u32, u32)> {
+    let mut dec = png::Decoder::new(Cursor::new(bytes));
+    dec.set_transformations(png::Transformations::EXPAND);
+    let mut reader = dec
+        .read_info()
+        .map_err(|e| IoError::decode("png", path, e))?;
+    let mut buf = vec![0u8; reader.output_buffer_size().unwrap_or(0)];
+    let info = reader
+        .next_frame(&mut buf)
+        .map_err(|e| IoError::decode("png", path, e))?;
+
+    let channels = match info.color_type {
+        png::ColorType::Grayscale => 1usize,
+        png::ColorType::GrayscaleAlpha => 2,
+        png::ColorType::Rgb => 3,
+        png::ColorType::Rgba => 4,
+        other => {
+            return Err(IoError::layout(
+                path,
+                format!("unsupported mask colour type {other:?}"),
+            ))
+        }
+    };
+    let raw = &buf[..info.buffer_size()];
+    let n = info.width as usize * info.height as usize;
+    let max = match info.bit_depth {
+        png::BitDepth::Eight => 255.0f32,
+        png::BitDepth::Sixteen => 65535.0,
+        other => {
+            return Err(IoError::layout(
+                path,
+                format!("unsupported mask bit depth {other:?}"),
+            ))
+        }
+    };
+    let sixteen = matches!(info.bit_depth, png::BitDepth::Sixteen);
+    let data: Vec<f32> = (0..n)
+        .map(|i| {
+            let k = i * channels;
+            let v = if sixteen {
+                u16::from_be_bytes([raw[k * 2], raw[k * 2 + 1]]) as f32
+            } else {
+                raw[k] as f32
+            };
+            v / max
+        })
+        .collect();
+    Ok((data, info.width, info.height))
+}
+
+fn decode_mask_tiff(bytes: &[u8], path: &Path) -> Result<(Vec<f32>, u32, u32)> {
+    use tiff::decoder::{Decoder, DecodingResult};
+    let mut d = Decoder::new(Cursor::new(bytes))
+        .map_err(|e| IoError::decode("tiff", path, e))?
+        .with_limits(tiff::decoder::Limits::unlimited());
+    let (w, h) = d
+        .dimensions()
+        .map_err(|e| IoError::decode("tiff", path, e))?;
+    let (channels, max) = match d
+        .colortype()
+        .map_err(|e| IoError::decode("tiff", path, e))?
+    {
+        tiff::ColorType::Gray(8) => (1usize, 255.0f64),
+        tiff::ColorType::Gray(16) => (1, 65535.0),
+        tiff::ColorType::RGB(8) => (3, 255.0),
+        tiff::ColorType::RGB(16) => (3, 65535.0),
+        other => {
+            return Err(IoError::layout(
+                path,
+                format!("unsupported mask layout {other:?}"),
+            ))
+        }
+    };
+    let samples: Vec<f64> = match d
+        .read_image()
+        .map_err(|e| IoError::decode("tiff", path, e))?
+    {
+        DecodingResult::U8(v) => v.into_iter().map(f64::from).collect(),
+        DecodingResult::U16(v) => v.into_iter().map(f64::from).collect(),
+        _ => {
+            return Err(IoError::layout(
+                path,
+                "expected 8- or 16-bit integer samples",
+            ))
+        }
+    };
+    let n = w as usize * h as usize;
+    let data: Vec<f32> = (0..n)
+        .map(|i| (samples[i * channels] / max) as f32)
+        .collect();
+    Ok((data, w, h))
+}
+
 /// Decode from memory. `path` is only used for error messages.
 pub fn decode_bytes(bytes: &[u8], path: &Path) -> Result<Image> {
     match Format::sniff(bytes) {

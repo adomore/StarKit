@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 0. Scaffold only — nothing is implemented.** Start at task **T0-1** (fixture generator). INV-5 applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before fixtures + oracle pass their Phase 0 acceptance.
+**Phase 0. T0-1 (fixture generator) is done; next is T0-2 (oracle).** INV-5 still applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before fixtures **and** oracle pass their Phase 0 acceptance (gate G0).
 
 ## Repository map
 
@@ -47,8 +47,12 @@ Every invariant is a release blocker. Each must be covered by at least one test 
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all
-# after T0-1:
-cargo run -p starkit-fixtures -- gen --suite basic-5k --seed 1 --out fixtures/generated
+# full-scale fixture AC tests: regenerate all five suites, check two-run
+# byte-identity and the committed manifest. Slow (~6 min) — gated (D-011).
+cargo test --release -- --ignored
+# regenerate fixtures (--seed defaults to the suite's canonical seed, D-007;
+# `--suite all` = the five committed suites, and refuses a --seed override):
+cargo run --release -p starkit-fixtures -- gen --suite all --out fixtures/generated
 # oracle setup (T0-2):
 python3 -m venv oracle/.venv
 oracle/.venv/bin/pip install -r oracle/requirements.txt

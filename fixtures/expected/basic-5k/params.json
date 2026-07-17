@@ -1,0 +1,39 @@
+{
+  "schema": "starkit-fixtures-params/1",
+  "suite": "basic-5k",
+  "seed": 1000001,
+  "image": {
+    "width": 4096,
+    "height": 4096,
+    "margin_px": 8.0
+  },
+  "background": {
+    "level_e": 300.0,
+    "gradient_x_e": 24.0,
+    "gradient_y_e": -16.0
+  },
+  "noise": {
+    "read_sigma_e": 8.0,
+    "gain_adu_per_e": 1.0,
+    "saturation_adu": 65535.0
+  },
+  "psf": {
+    "moffat_fraction": 0.6,
+    "moffat_beta_min": 2.5,
+    "moffat_beta_max": 4.5,
+    "ellipticity_max": 0.15,
+    "supersample": 8,
+    "stamp_radius_fwhm": 8.0
+  },
+  "stars": {
+    "count": 5000,
+    "flux_min_e": 700.0,
+    "flux_max_e": 500000.0,
+    "flux_powerlaw_alpha": 1.5,
+    "fwhm_mean_px": 3.2,
+    "fwhm_sigma_px": 0.5,
+    "fwhm_floor_px": 1.6,
+    "min_separation_px": 8.0,
+    "tint_strength": 0.18
+  }
+}

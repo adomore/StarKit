@@ -1,0 +1,3 @@
+# Committed fixture artifacts are hash-pinned in MANIFEST.sha256.
+# Never let git rewrite their bytes (CRLF on a Windows checkout would break every hash).
+fixtures/expected/** -text

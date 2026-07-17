@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-66%20passing-brightgreen)](#测试)
+[![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen)](#测试)
 
 **中文** · [English](README.en.md)
 
@@ -35,8 +35,8 @@
 |---|---|---|
 | **T0-1** | 合成金标准夹具生成器 | ✅ **已完成** |
 | **T0-2** | Python oracle（photutils）——独立测量 | ✅ **已完成** |
-| T0-3 | 星表 schema v1 冻结 | ⏳ 下一步 |
-| T0-4 | 本地 CI 脚本（`ci.sh`） | ⏳ |
+| **T0-3** | 星表 schema v1 冻结 | ✅ **已完成** |
+| **T0-4** | 本地 CI 脚本（`ci.sh`） | ✅ **已完成** |
 
 规则（INV-5）是：**在能证明算法有效的仪器就位之前，不写算法。** 「召回率 98%」这类质量声明，如果没有已知精确真值的金标准数据加上一次独立的第二方测量，就是空话。所以 Phase 0 先把两者建起来，在关口 **G0** 通过之前，`starkit-core` / `starkit-io` / `starkit-cli` 一律保持为空。
 
@@ -77,9 +77,9 @@
 ## 快速开始
 
 ```bash
-cargo test --workspace          # Rust：43 个测试，约 4 秒
-cargo clippy --workspace --all-targets -- -D warnings
-oracle/.venv/bin/python -m pytest oracle -q   # oracle：23 个测试，约 1 秒
+./ci.sh          # 全部检查：fmt、clippy、52 个 Rust 测试、29 个 oracle 测试、
+                 # 夹具确定性冒烟。约 25 秒，任何一项失败即非零退出。
+./ci.sh --full   # 追加约 6 分钟的全尺寸验收测试
 ```
 
 重新生成夹具图像（约 400 MB，release 下约 6 分钟；`--seed` 默认取各 suite 的规范种子）：

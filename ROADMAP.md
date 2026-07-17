@@ -19,11 +19,12 @@ Goal: before any product code exists, build the instruments that make quality cl
 - [x] **T0-3 Catalog schema v1 freeze.** `starkit_core::types` serde types ⇄ `docs/FIXTURES.md` schema; JSON round-trip test; fixtures and oracle both emit/consume the same schema.
   **AC:** round-trip test green; schema section in FIXTURES.md flipped from DRAFT to FROZEN; any change from the draft logged in DECISIONS.md.
   **Done** 2026-07-16. Round-trip is **byte-identical** across all five committed truth catalogs (`crates/starkit-core/tests/schema_v1.rs`, 9 tests) — which also discharges the D-006 debt: those bytes were written by `starkit-fixtures`' independent mirror, so reproducing them exactly through `starkit-core::types` proves the two definitions agree without the crates sharing a type. Verified to have teeth by mutation (renaming one field fails the test). Oracle side checked from Python (`oracle/test_oracle.py`, 6 schema tests → 29 total). FIXTURES.md flipped to FROZEN. Changes from draft: **one** — optional `measurement` block (D-023, owner-approved). Also uncovered D-022: serde_json's default float parser is off by 1 ULP on ~5.7 % of committed values, silently breaking D-009's round-trip claim; fixed via the `float_roundtrip` + `preserve_order` features.
-- [ ] **T0-4 Local CI script** `ci.sh`: fmt check, clippy `-D warnings`, workspace tests, fixture determinism smoke (regenerate one suite, verify manifest hashes).
+- [x] **T0-4 Local CI script** `ci.sh`: fmt check, clippy `-D warnings`, workspace tests, fixture determinism smoke (regenerate one suite, verify manifest hashes).
   **AC:** single command; non-zero exit on any failure.
+  **Done** 2026-07-16. `./ci.sh` runs fmt · clippy · 52 Rust tests · 29 oracle tests · fixture smoke (regenerates `basic-5k`, verifies its 3 artifacts against the committed manifest) in ~25 s. `--full` adds the D-011 `--ignored` full-scale AC tests (~6 min); `--quick` skips the smoke. **AC verified by failure injection, not just the happy path:** fmt violation, failing test, and a corrupted manifest each exit 1 with the offending output; restoring exits 0. Output is captured and shown only on failure. Decisions: D-024 (manifest mismatch fails loudly on every host and names D-012 rather than skipping off-platform — the cross-platform mechanism stays unchosen until a second host produces evidence), D-025 (a missing oracle venv is a failure, never a silent skip).
 
 **Gate G0 checklist**
-- [ ] T0-1 … T0-4 all AC green
+- [x] T0-1 … T0-4 all AC green — verified by `./ci.sh` (2026-07-16)
 - [ ] Q1 answered (photographer's OS + form factor) → DECISIONS.md
 - [ ] Q2 corpus: ≥ 20 real 16-bit TIFFs collected incl. hard cases (or explicitly deferred with a decision note — Phase 1 real-image AC will block on it)
 - [ ] Q3–Q6 answered or deferred with decision notes

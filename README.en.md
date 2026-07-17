@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-66%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen)](#testing)
 
 **English** · [中文](README.md)
 
@@ -35,8 +35,8 @@ A third problem is specific to nightscape (星野) work: **an automatic star ope
 |---|---|---|
 | **T0-1** | Synthetic golden fixture generator | ✅ **done** |
 | **T0-2** | Python oracle (photutils) — independent measurement | ✅ **done** |
-| T0-3 | Catalog schema v1 freeze | ⏳ next |
-| T0-4 | Local CI script (`ci.sh`) | ⏳ |
+| **T0-3** | Catalog schema v1 freeze | ✅ **done** |
+| **T0-4** | Local CI script (`ci.sh`) | ✅ **done** |
 
 The rule (INV-5) is that **no algorithm ships before the instrument that can prove it works**. Quality claims like "98 % recall" are meaningless without golden data with exact known truth and an independent second measurement. So Phase 0 builds both, and `starkit-core` / `starkit-io` / `starkit-cli` stay empty until gate **G0** passes.
 
@@ -77,9 +77,9 @@ Truth catalogs and generator params are committed under [`fixtures/expected/`](f
 ## Quick start
 
 ```bash
-cargo test --workspace          # Rust: 43 tests, ~4 s
-cargo clippy --workspace --all-targets -- -D warnings
-oracle/.venv/bin/python -m pytest oracle -q   # oracle: 23 tests, ~1 s
+./ci.sh          # everything: fmt, clippy, 52 Rust tests, 29 oracle tests,
+                 # fixture determinism smoke. ~25 s, non-zero on any failure.
+./ci.sh --full   # adds the ~6 min full-scale acceptance tests
 ```
 
 Regenerate the fixture images (~400 MB, ~6 min in release; `--seed` defaults to each suite's canonical seed):

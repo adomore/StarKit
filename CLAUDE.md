@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 0. T0-1 (fixtures), T0-2 (oracle) and T0-3 (schema v1 FROZEN) are done; next is T0-4 (`ci.sh`).** INV-5 still applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before gate G0 closes (T0-4 outstanding, plus the Q1/Q2 checklist items).
+**Phase 0. T0-1 … T0-4 are all done and their AC are green (`./ci.sh`).** Gate **G0 is not closed**: it still needs Q1 (photographer's OS + form factor) and Q2 (≥ 20 real 16-bit TIFFs, or an explicit deferral note) — see the G0 checklist in `ROADMAP.md`. INV-5 holds until G0 closes: no product code in `starkit-core` / `starkit-io` / `starkit-cli`.
 
 ## Repository map
 
@@ -61,7 +61,9 @@ oracle/.venv/bin/python -m pip install -r oracle/requirements.txt
 oracle/.venv/bin/python -m pytest oracle -q
 # regenerate the committed oracle reports (needs fixtures/generated, ~2 min):
 oracle/.venv/bin/python oracle/run_suites.py
-# single-command local CI (created in T0-4):
+# single-command local CI: fmt, clippy, rust tests, oracle tests, fixture
+# smoke (~25 s). --full adds the ~6 min --ignored AC tests; --quick skips the
+# smoke. Non-zero exit on any failure.
 ./ci.sh
 ```
 

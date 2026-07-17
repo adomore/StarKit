@@ -47,7 +47,9 @@ A single u64 seed per suite fully determines the output bytes. Two runs must be 
 
 A detected star matches a truth star if within radius `max(1.5 px, 0.5 × truth_fwhm)`; greedy matching in descending truth flux; each truth star matches at most once. Recall and precision are computed over truth stars with peak SNR ≥ 5 unless a table states otherwise. Centroid/FWHM statistics are computed over matched pairs only.
 
-## Catalog schema v1 — **DRAFT** (frozen at task T0-3)
+## Catalog schema v1 — **FROZEN** (T0-3, 2026-07-16)
+
+Changing anything in this section is a breaking change: bump the `schema` identifier to `starkit-catalog/2` and log a DECISIONS entry. Additive optional fields are the only exception.
 
 ```json
 {
@@ -61,12 +63,16 @@ A detected star matches a truth star if within radius `max(1.5 px, 0.5 × truth_
       "saturated": false, "tier": "small", "snr": 41.2
     }
   ],
-  "generator": { "note": "present only in truth catalogs: full params + seed" }
+  "generator": { "note": "present only in truth catalogs: full params + seed" },
+  "measurement": { "note": "present only in measured catalogs: method, thresholds, library versions" }
 }
 ```
 
 - Coordinates (frozen project-wide): `(0.0, 0.0)` = center of the top-left pixel; x → right, y → down. `theta` in radians, CCW from +x.
 - `flux` = total star flux, `peak` = peak pixel value, both in linear units. `fwhm` = geometric mean of the two axes, pixels. `ellipticity` = 1 − b/a.
 - `snr` (peak SNR) is required in truth catalogs, optional in measured/detected catalogs. **Per-channel** — see "Star population" above and D-017.
-- `generator` is present only in truth catalogs written by `starkit-fixtures`.
-- Rust source of truth for the types: `crates/starkit-core/src/types.rs` (kept in lockstep with this section; divergence is a bug).
+- `generator` is present only in truth catalogs written by `starkit-fixtures`: the full generator params plus the seed. Optional; omitted entirely when absent, never `null`.
+- `measurement` is present only in **measured** catalogs — the oracle today, `starkit-core::detect` in Phase 1 (D-023). It records method, thresholds and exact library versions, so a catalog that outlives its report can still say how it was produced. The mirror image of `generator`; both are opaque JSON to `starkit-core`. Optional; omitted when absent.
+- A catalog carries `generator` **or** `measurement`, never both: a star list is either generated or measured.
+- **Rust source of truth for the types:** `crates/starkit-core/src/types.rs`. `crates/starkit-fixtures/src/catalog.rs` is a deliberate second mirror (D-006) — the generator must not depend on the code it measures. The two are held together by `crates/starkit-core/tests/schema_v1.rs`, which re-serializes every committed truth catalog through `starkit-core`'s types and requires the bytes back unchanged; `oracle/test_oracle.py` checks the third implementation from the Python side. Divergence is a bug, and these tests are what make that claim more than a wish.
+- **Byte-exact round-tripping requires two `serde_json` features** (D-022), enabled in the workspace manifest: `float_roundtrip` — the default float parser is not correctly rounded and reads ~5.7 % of the committed values 1 ULP low — and `preserve_order`, without which `generator` keys come back alphabetised.

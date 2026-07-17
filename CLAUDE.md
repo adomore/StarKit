@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 0. T0-1 (fixtures) and T0-2 (oracle) are done; next is T0-3 (schema v1 freeze).** INV-5 still applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before gate G0 closes (T0-3, T0-4 outstanding).
+**Phase 0. T0-1 (fixtures), T0-2 (oracle) and T0-3 (schema v1 FROZEN) are done; next is T0-4 (`ci.sh`).** INV-5 still applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before gate G0 closes (T0-4 outstanding, plus the Q1/Q2 checklist items).
 
 ## Repository map
 

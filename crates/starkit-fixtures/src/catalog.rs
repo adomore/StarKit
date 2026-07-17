@@ -1,4 +1,4 @@
-//! Catalog schema v1 — local mirror (D-006).
+//! Catalog schema v1 (FROZEN, T0-3) — local mirror (D-006).
 //!
 //! `docs/FIXTURES.md` names `starkit-core/src/types.rs` the Rust source of truth
 //! for this schema, but the non-circularity rule forbids `starkit-fixtures` from
@@ -78,7 +78,13 @@ pub struct Catalog {
     pub image: ImageMeta,
     pub stars: Vec<Star>,
     /// Generator parameters + seed — present only in truth catalogs written by
-    /// `starkit-fixtures`.
+    /// `starkit-fixtures`. Typed here (unlike the mirror in `starkit-core`,
+    /// which keeps it opaque) because this crate *is* the generator.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub generator: Option<Params>,
+    /// Measurement provenance — present only in measured catalogs, never in
+    /// truth. Mirrored for schema completeness so the two definitions stay
+    /// field-for-field identical; this crate never sets it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measurement: Option<serde_json::Value>,
 }

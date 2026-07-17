@@ -254,6 +254,9 @@ pub fn render(p: &Params) -> Result<Rendered, String> {
             },
             stars,
             generator: Some(p.clone()),
+            // Truth is generated, never measured: this crate must not claim
+            // measurement provenance (schema v1, D-023).
+            measurement: None,
         },
         image,
         sky_mask,

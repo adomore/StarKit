@@ -1,9 +1,22 @@
-//! Catalog schema v1 (DRAFT — frozen at task T0-3).
+//! Catalog schema v1 — **FROZEN** at task T0-3 (2026-07-16).
 //!
 //! Canonical definition: `docs/FIXTURES.md`, section "Catalog schema v1".
 //! Shared contract between `starkit-fixtures` (truth), `oracle/` (measured),
 //! and `starkit-core` (detected). Keep this file and that section in lockstep;
 //! divergence is a bug.
+//!
+//! `starkit-fixtures` carries its own mirror of these types rather than
+//! depending on this crate (D-006) — truth must not be produced by the code
+//! under test. The two definitions are held together by
+//! `tests/schema_v1.rs::committed_truth_catalogs_round_trip_byte_identically`,
+//! which re-serializes the committed fixtures through *these* types and
+//! demands the bytes back unchanged.
+//!
+//! Round-tripping bytes exactly requires two `serde_json` features, both
+//! enabled in the workspace manifest (D-022): `float_roundtrip` (its default
+//! float parser is off by 1 ULP on ~5.7 % of the committed values) and
+//! `preserve_order` (a `Value` map would otherwise re-emit `generator` keys in
+//! alphabetical order).
 
 use serde::{Deserialize, Serialize};
 
@@ -64,9 +77,16 @@ pub struct Catalog {
     pub image: ImageMeta,
     pub stars: Vec<Star>,
     /// Generator parameters + seed — present only in truth catalogs written by
-    /// `starkit-fixtures`.
+    /// `starkit-fixtures`. Opaque here: this crate must not grow an opinion
+    /// about how fixtures are made.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub generator: Option<serde_json::Value>,
+    /// Measurement provenance — method, thresholds and exact library versions.
+    /// Present only in *measured* catalogs (the oracle today, `detect` in Phase
+    /// 1); the mirror image of [`Catalog::generator`], and equally opaque. A
+    /// catalog that outlives its report must still say how it was produced.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measurement: Option<serde_json::Value>,
 }
 
 #[cfg(test)]
@@ -97,6 +117,7 @@ mod tests {
                 snr: Some(41.2),
             }],
             generator: None,
+            measurement: None,
         };
 
         let json = serde_json::to_string_pretty(&cat).expect("serialize");

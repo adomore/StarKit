@@ -222,3 +222,76 @@ def test_report_carries_the_suite_and_seed_from_truth() -> None:
     rep = compare(_cat([_star(1, 1.0, 1.0)], generator={"suite": "basic-5k", "seed": 1000001}), _cat([]))
     assert rep["suite"] == "basic-5k"
     assert rep["seed"] == 1000001
+
+
+# --------------------------------------------------------------------------
+# Catalog schema v1 conformance (T0-3)
+#
+# The schema is a contract between three independent implementations. The Rust
+# side proves fixtures <-> starkit-core agree; these prove the oracle emits the
+# same thing, so "fixtures and oracle both emit/consume the same schema" is
+# checked from both ends rather than assumed.
+# --------------------------------------------------------------------------
+
+# docs/FIXTURES.md, "Catalog schema v1" — FROZEN at T0-3.
+STAR_FIELDS_V1 = {
+    "id", "x", "y", "flux", "peak", "fwhm",
+    "ellipticity", "theta", "saturated", "tier", "snr",
+}
+TOPLEVEL_FIELDS_V1 = {"schema", "image", "stars", "generator", "measurement"}
+
+
+@pytest.fixture(scope="module")
+def measured_tiny(tmp_path_factory):
+    """Measure a tiny synthetic frame, so schema conformance is checked against
+    what measure.py actually emits rather than against a hand-written sample."""
+    import tifffile
+
+    from measure import measure
+
+    rng = np.random.default_rng(7)
+    h = w = 96
+    img = np.full((h, w), 300.0)
+    yy, xx = np.mgrid[0:h, 0:w]
+    for cx, cy, amp in [(30.4, 40.2, 4000.0), (70.1, 24.8, 1500.0)]:
+        img += amp * np.exp(-((xx - cx) ** 2 + (yy - cy) ** 2) / (2 * 1.36**2))
+    img = img + rng.normal(0, 11.0, img.shape)
+    rgb = np.clip(np.dstack([img] * 3), 0, 65535).astype(np.uint16)
+
+    path = tmp_path_factory.mktemp("schema") / "image.tiff"
+    tifffile.imwrite(str(path), rgb)
+    return measure(str(path), 3.2, 5.0)
+
+
+def test_oracle_emits_schema_v1_identifier(measured_tiny) -> None:
+    assert measured_tiny["schema"] == SCHEMA_V1
+
+
+def test_oracle_uses_only_schema_v1_toplevel_fields(measured_tiny) -> None:
+    extra = set(measured_tiny) - TOPLEVEL_FIELDS_V1
+    assert not extra, f"oracle emits fields outside schema v1: {sorted(extra)}"
+
+
+def test_oracle_emits_the_measured_form(measured_tiny) -> None:
+    """Measured, not generated: provenance yes, generator no."""
+    assert "generator" not in measured_tiny, "only starkit-fixtures may claim to be a generator"
+    assert measured_tiny["measurement"]["instrument"] == "oracle/measure.py"
+
+
+def test_oracle_star_fields_are_exactly_the_schema(measured_tiny) -> None:
+    assert measured_tiny["stars"], "the synthetic frame should yield detections"
+    for star in measured_tiny["stars"]:
+        extra = set(star) - STAR_FIELDS_V1
+        missing = STAR_FIELDS_V1 - set(star) - {"snr"}  # snr optional when measured
+        assert not extra, f"star carries non-schema fields: {sorted(extra)}"
+        assert not missing, f"star is missing schema fields: {sorted(missing)}"
+
+
+def test_oracle_image_block_matches_the_schema(measured_tiny) -> None:
+    assert set(measured_tiny["image"]) == {"width", "height", "bit_depth", "color_space"}
+    assert measured_tiny["image"]["bit_depth"] == 16
+    assert measured_tiny["image"]["color_space"] == "linear-rgb"
+
+
+def test_oracle_tier_values_are_the_frozen_encoding(measured_tiny) -> None:
+    assert {s["tier"] for s in measured_tiny["stars"]} <= {"large", "medium", "small"}

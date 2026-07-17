@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 0. T0-1 … T0-4 are all done and their AC are green (`./ci.sh`).** Gate **G0 is not closed**: it still needs Q1 (photographer's OS + form factor) and Q2 (≥ 20 real 16-bit TIFFs, or an explicit deferral note) — see the G0 checklist in `ROADMAP.md`. INV-5 holds until G0 closes: no product code in `starkit-core` / `starkit-io` / `starkit-cli`.
+**Phase 1. Gate G0 closed 2026-07-16** — T0-1…T0-4 AC green (`./ci.sh`), Q1 answered (D-026: Windows + standalone GUI), Q2 deferred (D-027), Q3/Q4/Q6 deferred (D-028). **INV-5 is discharged: product code may now be written.** Next task: **T1-1** (`starkit-io`). Standing debt: **G1 cannot close without the real corpus** (D-027) — FR-2's real-image AC, FR-4's photographer sign-off and T1-10 are all blocked on it.
 
 ## Repository map
 

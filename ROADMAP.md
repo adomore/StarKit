@@ -2,7 +2,7 @@
 
 Spec: `PRD.md` v1.0. Phases are gate-locked: tasks of a phase may not start until the previous gate checklist is complete. Task IDs are stable — reference them in commits and DECISIONS entries.
 
-**Current phase: 0**
+**Current phase: 1** — gate **G0 closed 2026-07-16** (T0-1…T0-4 AC green via `./ci.sh`; Q1 answered D-026; Q2 deferred D-027; Q3/Q4/Q6 deferred D-028). INV-5 is discharged: product code may now be written.
 
 ---
 
@@ -25,9 +25,9 @@ Goal: before any product code exists, build the instruments that make quality cl
 
 **Gate G0 checklist**
 - [x] T0-1 … T0-4 all AC green — verified by `./ci.sh` (2026-07-16)
-- [ ] Q1 answered (photographer's OS + form factor) → DECISIONS.md
-- [ ] Q2 corpus: ≥ 20 real 16-bit TIFFs collected incl. hard cases (or explicitly deferred with a decision note — Phase 1 real-image AC will block on it)
-- [ ] Q3–Q6 answered or deferred with decision notes
+- [x] Q1 answered: **Windows + standalone GUI** → D-026
+- [x] Q2 corpus: **explicitly deferred** → D-027. Phase 1 proceeds on synthetic fixtures; **G1 cannot close without the corpus** (FR-2 real-image AC, FR-4 sign-off, T1-10 all blocked).
+- [x] Q3–Q6: Q5 answered (D-014); Q3/Q4/Q6 deferred to the phase that needs them (D-028)
 
 ---
 

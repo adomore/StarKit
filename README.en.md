@@ -1,7 +1,7 @@
 # StarKit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
+[![Phase](https://img.shields.io/badge/phase-1%20%C2%B7%20MVP%20CLI-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
 [![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen)](#testing)
 
@@ -29,7 +29,7 @@ A third problem is specific to nightscape (星野) work: **an automatic star ope
 
 ## Project status
 
-**Phase 0 — building the measurement apparatus. There is no product code yet, and that is deliberate.**
+**Phase 0 is complete; gate G0 closed 2026-07-16.** The measurement apparatus is in place, so product code begins at Phase 1 (T1-1).
 
 | Task | What | State |
 |---|---|---|
@@ -38,7 +38,9 @@ A third problem is specific to nightscape (星野) work: **an automatic star ope
 | **T0-3** | Catalog schema v1 freeze | ✅ **done** |
 | **T0-4** | Local CI script (`ci.sh`) | ✅ **done** |
 
-The rule (INV-5) is that **no algorithm ships before the instrument that can prove it works**. Quality claims like "98 % recall" are meaningless without golden data with exact known truth and an independent second measurement. So Phase 0 builds both, and `starkit-core` / `starkit-io` / `starkit-cli` stay empty until gate **G0** passes.
+The rule (INV-5) is that **no algorithm ships before the instrument that can prove it works**. Quality claims like "98 % recall" are meaningless without golden data with exact known truth and an independent second measurement. Phase 0 built both — which is why `starkit-core` / `starkit-io` / `starkit-cli` were empty until now.
+
+> **Known debt ([D-027](docs/DECISIONS.md)):** the real-image corpus is not yet available, so Phase 1 proceeds on synthetic fixtures alone. Synthetic fixtures prove an algorithm is *correct*; only real work proves it is *useful*, and they are not substitutes. **Gate G1 therefore cannot close until the corpus exists** — FR-2's real-image acceptance, FR-4's photographer sign-off and T1-10 are all blocked on it.
 
 Full plan and task IDs: [ROADMAP.md](ROADMAP.md). Every non-trivial choice is logged in [docs/DECISIONS.md](docs/DECISIONS.md).
 

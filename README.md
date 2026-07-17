@@ -1,7 +1,7 @@
 # StarKit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
+[![Phase](https://img.shields.io/badge/phase-1%20%C2%B7%20MVP%20CLI-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
 [![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen)](#测试)
 
@@ -29,7 +29,7 @@
 
 ## 项目状态
 
-**Phase 0——正在搭建测量仪器。目前还没有产品代码，这是刻意的。**
+**Phase 0 已完成，关口 G0 于 2026-07-16 关闭。** 测量仪器就位，产品代码从 Phase 1（T1-1）开始。
 
 | 任务 | 内容 | 状态 |
 |---|---|---|
@@ -38,7 +38,9 @@
 | **T0-3** | 星表 schema v1 冻结 | ✅ **已完成** |
 | **T0-4** | 本地 CI 脚本（`ci.sh`） | ✅ **已完成** |
 
-规则（INV-5）是：**在能证明算法有效的仪器就位之前，不写算法。** 「召回率 98%」这类质量声明，如果没有已知精确真值的金标准数据加上一次独立的第二方测量，就是空话。所以 Phase 0 先把两者建起来，在关口 **G0** 通过之前，`starkit-core` / `starkit-io` / `starkit-cli` 一律保持为空。
+规则（INV-5）是：**在能证明算法有效的仪器就位之前，不写算法。** 「召回率 98%」这类质量声明，如果没有已知精确真值的金标准数据加上一次独立的第二方测量，就是空话。Phase 0 把两者都建了起来——这也是为什么在此之前 `starkit-core` / `starkit-io` / `starkit-cli` 一直是空的。
+
+> **已知欠债（[D-027](docs/DECISIONS.md)）：** 真实语料尚未到位，Phase 1 仅靠合成夹具推进。合成夹具能证明算法**正确**，只有真实作品能证明它**有用**——两者不可互相替代。因此 **关口 G1 在语料到位前无法关闭**（FR-2 真实图像验收、FR-4 摄影师签字、T1-10 均被阻塞）。
 
 完整计划与任务 ID 见 [ROADMAP.md](ROADMAP.md)。每一个非平凡的选择都记录在 [docs/DECISIONS.md](docs/DECISIONS.md)。
 

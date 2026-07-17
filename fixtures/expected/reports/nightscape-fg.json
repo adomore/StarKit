@@ -1,0 +1,113 @@
+{
+  "schema": "starkit-oracle-report/1",
+  "suite": "nightscape-fg",
+  "seed": 1000005,
+  "counts": {
+    "truth_total": 8000,
+    "truth_at_snr_floor": 5278,
+    "detections": 5782,
+    "matched_any": 5778,
+    "matched_at_snr_floor": 4836,
+    "false_positives": 4,
+    "fwhm_unusable": 0
+  },
+  "metrics": {
+    "snr_floor": 5.0,
+    "recall_at_snr_floor": 0.916256157635468,
+    "precision": 0.9993081978554134,
+    "precision_strict": 0.8363887928052577,
+    "centroid_error_px": {
+      "n": 5778,
+      "median": 0.05293607728560354,
+      "p95": 0.2406987251678649,
+      "mean": 0.07920700574340477
+    },
+    "fwhm_rel_error": {
+      "n": 5778,
+      "median": 0.09824211462028107,
+      "p95": 0.1947593727043572,
+      "mean": 0.09409126155882469
+    },
+    "fwhm_rel_bias": 0.09657652866157244
+  },
+  "per_snr_bin": [
+    {
+      "snr_min": 0.0,
+      "snr_max": 3.0,
+      "n_truth": 1107,
+      "recall": 0.044263775971093045
+    },
+    {
+      "snr_min": 3.0,
+      "snr_max": 5.0,
+      "n_truth": 1615,
+      "recall": 0.5529411764705883
+    },
+    {
+      "snr_min": 5.0,
+      "snr_max": 10.0,
+      "n_truth": 1846,
+      "recall": 0.8840736728060672
+    },
+    {
+      "snr_min": 10.0,
+      "snr_max": 20.0,
+      "n_truth": 1407,
+      "recall": 0.9275053304904051
+    },
+    {
+      "snr_min": 20.0,
+      "snr_max": 50.0,
+      "n_truth": 1206,
+      "recall": 0.9328358208955224
+    },
+    {
+      "snr_min": 50.0,
+      "snr_max": 100.0,
+      "n_truth": 587,
+      "recall": 0.9420783645655877
+    },
+    {
+      "snr_min": 100.0,
+      "snr_max": null,
+      "n_truth": 232,
+      "recall": 0.9525862068965517
+    }
+  ],
+  "metric_definitions": {
+    "matching": "detection within max(1.5 px, 0.5 x truth_fwhm); greedy in descending truth flux; each truth star matches at most once (docs/FIXTURES.md)",
+    "snr": "truth peak SNR is PER-CHANNEL (D-017); the measured mean-of-RGB plane has sqrt(3) better SNR, so snr=5 is ~8.7 sigma in the data actually measured",
+    "recall_at_snr_floor": "matched truth stars with snr >= floor / all truth stars with snr >= floor",
+    "precision": "detections matched to any truth star / all detections",
+    "precision_strict": "detections matched to a truth star with snr >= floor / all detections",
+    "centroid_error_px": "euclidean distance between matched detection and truth position",
+    "fwhm_rel_error": "|measured_fwhm - truth_fwhm| / truth_fwhm over matched pairs with a usable fit",
+    "fwhm_rel_bias": "median signed (measured - truth)/truth: sign shows whether moments over- or under-estimate"
+  },
+  "measurement": {
+    "instrument": "oracle/measure.py",
+    "method": "Background2D+MedianBackground -> DAOStarFinder -> Gaussian2D fit",
+    "plane": "mean-of-RGB",
+    "fwhm_guess_px": 3.2,
+    "nsigma": 5.0,
+    "background_rms": 11.061805584026377,
+    "background_box_size": 64,
+    "sky_mask": "C:\\Users\\Administrator\\Documents\\SC\\Claude\\StarKit\\fixtures\\generated\\nightscape-fg\\sky_mask.png",
+    "foreground_exclusion_px": 4,
+    "aperture_radius_px": 4.800000000000001,
+    "versions": {
+      "numpy": "2.5.1",
+      "scipy": "1.18.0",
+      "astropy": "8.0.1",
+      "photutils": "3.0.0",
+      "tifffile": "2026.7.14"
+    }
+  },
+  "versions": {
+    "numpy": "2.5.1",
+    "scipy": "1.18.0",
+    "astropy": "8.0.1",
+    "photutils": "3.0.0",
+    "tifffile": "2026.7.14"
+  }
+}

@@ -16,6 +16,7 @@ Purpose: golden synthetic star fields with exact known truth, so detection and r
 ## Star population
 
 - Flux: power-law distribution (bright tail), range per suite; **peak SNR is computed and stored per star** — quality metrics are conditioned on it.
+  - **`snr` is PER-CHANNEL peak SNR** (D-017): `peak / sqrt(peak + background + read_noise²)`, in electrons. The mean-of-RGB plane that consumers actually measure (D-010) averages three channels and so has **√3 better SNR**: a star stored as `snr = 5` sits at ≈ 8.7 σ in that plane. Every SNR-conditioned bar in this repo — including FR-2's "recall ≥ 98 % at SNR ≥ 5" — is stated in these per-channel units and is therefore a weaker claim than it first reads. Do not silently switch definitions: `snr ≥ 5` per-channel and `snr ≥ 8.66` mean-of-RGB select exactly the same stars, but conditioning the existing bar on the mean-of-RGB value makes it unachievable (measured: the oracle tops out at 97.19 % recall, at 25.5 % precision).
 - FWHM: normal around a per-suite mean (e.g. 3.2 px ± 0.5), floor 1.6 px.
 - Positions: uniform with a minimum-separation constraint, except in `pairs`.
 - Tier (truth): flux tertiles within the suite → large / medium / small. Detection may use its own tier thresholds; evaluation matches stars by position, never by tier equality.
@@ -66,6 +67,6 @@ A detected star matches a truth star if within radius `max(1.5 px, 0.5 × truth_
 
 - Coordinates (frozen project-wide): `(0.0, 0.0)` = center of the top-left pixel; x → right, y → down. `theta` in radians, CCW from +x.
 - `flux` = total star flux, `peak` = peak pixel value, both in linear units. `fwhm` = geometric mean of the two axes, pixels. `ellipticity` = 1 − b/a.
-- `snr` (peak SNR) is required in truth catalogs, optional in measured/detected catalogs.
+- `snr` (peak SNR) is required in truth catalogs, optional in measured/detected catalogs. **Per-channel** — see "Star population" above and D-017.
 - `generator` is present only in truth catalogs written by `starkit-fixtures`.
 - Rust source of truth for the types: `crates/starkit-core/src/types.rs` (kept in lockstep with this section; divergence is a bug).

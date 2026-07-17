@@ -4,3 +4,4 @@ astropy>=6.0
 photutils>=1.11
 pillow>=10
 tifffile>=2024.0
+pytest>=8

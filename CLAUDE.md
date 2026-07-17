@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 0. T0-1 (fixture generator) is done; next is T0-2 (oracle).** INV-5 still applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before fixtures **and** oracle pass their Phase 0 acceptance (gate G0).
+**Phase 0. T0-1 (fixtures) and T0-2 (oracle) are done; next is T0-3 (schema v1 freeze).** INV-5 still applies: no product code in `starkit-core` / `starkit-io` / `starkit-cli` before gate G0 closes (T0-3, T0-4 outstanding).
 
 ## Repository map
 
@@ -53,9 +53,14 @@ cargo test --release -- --ignored
 # regenerate fixtures (--seed defaults to the suite's canonical seed, D-007;
 # `--suite all` = the five committed suites, and refuses a --seed override):
 cargo run --release -p starkit-fixtures -- gen --suite all --out fixtures/generated
-# oracle setup (T0-2):
+# oracle setup (T0-2). Interpreter path is POSIX here; on Windows it is
+# oracle/.venv/Scripts/python.exe (D-021).
 python3 -m venv oracle/.venv
-oracle/.venv/bin/pip install -r oracle/requirements.txt
+oracle/.venv/bin/python -m pip install -r oracle/requirements.txt
+# oracle tests (fast: asserts the committed reports, needs no fixture images):
+oracle/.venv/bin/python -m pytest oracle -q
+# regenerate the committed oracle reports (needs fixtures/generated, ~2 min):
+oracle/.venv/bin/python oracle/run_suites.py
 # single-command local CI (created in T0-4):
 ./ci.sh
 ```

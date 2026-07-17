@@ -4,4 +4,31 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
+[lib]
+name = "starkit_fixtures"
+path = "src/lib.rs"
+
+[[bin]]
+name = "starkit-fixtures"
+path = "src/main.rs"
+
 [dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow = "1"
+clap = { version = "4.6", features = ["derive"] }
+png = "0.18.1"
+sha2 = "0.11.0"
+thiserror = "2"
+tiff = "0.11.3"
+
+# Pinned exactly (D-008): the ChaCha stream and the distribution sampling
+# algorithms of these crates *are* the output-byte contract. A semver-compatible
+# bump may change draw sequences and silently invalidate the committed manifest.
+# Bumping them is a deliberate act: regenerate fixtures and record a D-entry.
+rand = "=0.10.2"
+rand_chacha = "=0.10.0"
+rand_distr = "=0.6.0"
+
+[dev-dependencies]
+tempfile = "3"

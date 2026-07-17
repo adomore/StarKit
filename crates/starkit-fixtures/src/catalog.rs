@@ -1,11 +1,17 @@
-//! Catalog schema v1 (DRAFT — frozen at task T0-3).
+//! Catalog schema v1 — local mirror (D-006).
 //!
-//! Canonical definition: `docs/FIXTURES.md`, section "Catalog schema v1".
-//! Shared contract between `starkit-fixtures` (truth), `oracle/` (measured),
-//! and `starkit-core` (detected). Keep this file and that section in lockstep;
-//! divergence is a bug.
+//! `docs/FIXTURES.md` names `starkit-core/src/types.rs` the Rust source of truth
+//! for this schema, but the non-circularity rule forbids `starkit-fixtures` from
+//! depending on `starkit-core`: truth must not be produced by the code under
+//! test. So this crate carries its own serde mirror, and task T0-3 adds the
+//! cross-check that the two definitions agree.
+//!
+//! Keep this file, `starkit-core/src/types.rs`, and the schema section of
+//! `docs/FIXTURES.md` in lockstep; divergence is a bug.
 
 use serde::{Deserialize, Serialize};
+
+use crate::params::Params;
 
 /// Schema identifier expected in every catalog file.
 pub const SCHEMA_V1: &str = "starkit-catalog/1";
@@ -34,14 +40,22 @@ pub struct ImageMeta {
 ///
 /// Coordinates (frozen project-wide): `(0.0, 0.0)` is the **center of the
 /// top-left pixel**; x → right, y → down.
+///
+/// Photometric convention for truth catalogs (D-010): `flux` and `peak` describe
+/// the **noiseless, mean-of-RGB-channels** star signal in output ADU, excluding
+/// background. Per-star colour tint is normalised to mean 1.0 across channels, so
+/// a consumer measuring `(R+G+B)/3` sees exactly these numbers. `peak` is the
+/// pre-clip value: a saturated star's true peak is recorded here even though the
+/// image clips it at 65535. Halo and bleed components (`saturated` suite) are
+/// *additional* signal and are not included in `flux`; see the `generator` block.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Star {
     pub id: u32,
     pub x: f64,
     pub y: f64,
-    /// Total flux, linear units.
+    /// Total star flux, linear units (ADU).
     pub flux: f64,
-    /// Peak pixel value, linear units.
+    /// Peak pixel value, linear units (ADU), before clipping.
     pub peak: f64,
     /// Full width at half maximum in pixels (geometric mean of the two axes).
     pub fwhm: f64,
@@ -66,50 +80,5 @@ pub struct Catalog {
     /// Generator parameters + seed — present only in truth catalogs written by
     /// `starkit-fixtures`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub generator: Option<serde_json::Value>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn catalog_json_round_trip() {
-        let cat = Catalog {
-            schema: SCHEMA_V1.to_string(),
-            image: ImageMeta {
-                width: 4096,
-                height: 4096,
-                bit_depth: 16,
-                color_space: "linear-rgb".into(),
-            },
-            stars: vec![Star {
-                id: 1,
-                x: 123.45,
-                y: 67.89,
-                flux: 15000.0,
-                peak: 3200.0,
-                fwhm: 3.1,
-                ellipticity: 0.04,
-                theta: 0.6,
-                saturated: false,
-                tier: Tier::Small,
-                snr: Some(41.2),
-            }],
-            generator: None,
-        };
-
-        let json = serde_json::to_string_pretty(&cat).expect("serialize");
-        let back: Catalog = serde_json::from_str(&json).expect("deserialize");
-
-        assert_eq!(cat, back);
-        assert!(
-            json.contains("\"tier\": \"small\""),
-            "tier must serialize lowercase"
-        );
-        assert!(
-            !json.contains("generator"),
-            "absent generator block must be omitted"
-        );
-    }
+    pub generator: Option<Params>,
 }

@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-66%20passing-brightgreen)](#testing)
 
 **English** · [中文](README.md)
 
@@ -34,13 +34,25 @@ A third problem is specific to nightscape (星野) work: **an automatic star ope
 | Task | What | State |
 |---|---|---|
 | **T0-1** | Synthetic golden fixture generator | ✅ **done** |
-| T0-2 | Python oracle (photutils) — independent measurement | ⏳ next |
-| T0-3 | Catalog schema v1 freeze | ⏳ |
+| **T0-2** | Python oracle (photutils) — independent measurement | ✅ **done** |
+| T0-3 | Catalog schema v1 freeze | ⏳ next |
 | T0-4 | Local CI script (`ci.sh`) | ⏳ |
 
 The rule (INV-5) is that **no algorithm ships before the instrument that can prove it works**. Quality claims like "98 % recall" are meaningless without golden data with exact known truth and an independent second measurement. So Phase 0 builds both, and `starkit-core` / `starkit-io` / `starkit-cli` stay empty until gate **G0** passes.
 
 Full plan and task IDs: [ROADMAP.md](ROADMAP.md). Every non-trivial choice is logged in [docs/DECISIONS.md](docs/DECISIONS.md).
+
+**The fixtures are proven solvable.** The independent photutils oracle, measured on `basic-5k`:
+
+| Metric | Bar | Oracle achieves |
+|---|---|---|
+| Recall @ SNR ≥ 5 | ≥ 98 % | **99.21 %** |
+| Precision | ≥ 99 % | **99.87 %** |
+| Median centroid error | — | **0.056 px** |
+
+That is the point of the exercise: if the reference instrument cannot find the stars, no claim about `starkit-core` finding them would mean anything. This is also the bar Phase 1 must meet.
+
+> Read the units before quoting the number: truth `snr` is **per-channel** peak SNR, while the mean-of-RGB plane the oracle measures has √3 better SNR — a star labelled `snr = 5` sits at ≈ 8.7 σ in the data actually measured. **"Recall ≥ 98 % at SNR ≥ 5" is an easier achievement than it reads.** See [D-017](docs/DECISIONS.md).
 
 ## What exists today: golden fixtures
 
@@ -65,8 +77,9 @@ Truth catalogs and generator params are committed under [`fixtures/expected/`](f
 ## Quick start
 
 ```bash
-cargo test --workspace          # 43 tests, ~4 s
+cargo test --workspace          # Rust: 43 tests, ~4 s
 cargo clippy --workspace --all-targets -- -D warnings
+oracle/.venv/bin/python -m pytest oracle -q   # oracle: 23 tests, ~1 s
 ```
 
 Regenerate the fixture images (~400 MB, ~6 min in release; `--seed` defaults to each suite's canonical seed):
@@ -107,7 +120,9 @@ These are release blockers, each covered by tests as soon as the relevant code e
 
 ## Testing
 
-`cargo test --workspace` runs 43 tests in about four seconds: PSF/photometry unit tests, byte-identity of every emitted artifact type, and schema + population validation of the committed truth catalogs for all five suites.
+`cargo test --workspace` runs 43 Rust tests in about four seconds: PSF/photometry unit tests, byte-identity of every emitted artifact type, and schema + population validation of the committed truth catalogs for all five suites.
+
+`pytest oracle` runs 23 oracle tests in about a second: the T0-2 acceptance criteria, the matching rule from `docs/FIXTURES.md`, and the metric semantics. They assert the **committed reports**, so they need neither the 400 MB of images nor a six-minute regeneration; `python oracle/run_suites.py` rebuilds those reports from the images.
 
 The two full-scale acceptance tests regenerate all five real suites (~10⁸ Poisson draws, ~6 min in release) and are `#[ignore]`d so the default run stays fast enough that people actually run it — see [D-011](docs/DECISIONS.md). They are gated, not skipped: `cargo test --release -- --ignored`.
 

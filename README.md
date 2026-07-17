@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](#测试)
+[![Tests](https://img.shields.io/badge/tests-66%20passing-brightgreen)](#测试)
 
 **中文** · [English](README.en.md)
 
@@ -34,13 +34,25 @@
 | 任务 | 内容 | 状态 |
 |---|---|---|
 | **T0-1** | 合成金标准夹具生成器 | ✅ **已完成** |
-| T0-2 | Python oracle（photutils）——独立测量 | ⏳ 下一步 |
-| T0-3 | 星表 schema v1 冻结 | ⏳ |
+| **T0-2** | Python oracle（photutils）——独立测量 | ✅ **已完成** |
+| T0-3 | 星表 schema v1 冻结 | ⏳ 下一步 |
 | T0-4 | 本地 CI 脚本（`ci.sh`） | ⏳ |
 
 规则（INV-5）是：**在能证明算法有效的仪器就位之前，不写算法。** 「召回率 98%」这类质量声明，如果没有已知精确真值的金标准数据加上一次独立的第二方测量，就是空话。所以 Phase 0 先把两者建起来，在关口 **G0** 通过之前，`starkit-core` / `starkit-io` / `starkit-cli` 一律保持为空。
 
 完整计划与任务 ID 见 [ROADMAP.md](ROADMAP.md)。每一个非平凡的选择都记录在 [docs/DECISIONS.md](docs/DECISIONS.md)。
+
+**夹具已被证明可解。** 独立的 photutils oracle 在 `basic-5k` 上实测：
+
+| 指标 | 门槛 | oracle 实测 |
+|---|---|---|
+| 召回率 @ SNR ≥ 5 | ≥ 98% | **99.21%** |
+| 精确率 | ≥ 99% | **99.87%** |
+| 质心误差中位数 | — | **0.056 px** |
+
+这一步的意义：如果参考仪器自己都找不到这些星,那么任何关于 `starkit-core` 能找到它们的说法都毫无意义。这条线同时也成为 Phase 1 必须达到的标尺。
+
+> 口径必须说清楚：真值 `snr` 是**单通道**峰值信噪比,而 oracle 实际测量的 RGB 均值图信噪比高 √3——所以标为 `snr=5` 的星在被测图上实为约 8.7 σ。**「SNR≥5 召回 98%」比字面听起来容易。** 详见 [D-017](docs/DECISIONS.md)。
 
 ## 目前已有：金标准夹具
 
@@ -65,8 +77,9 @@
 ## 快速开始
 
 ```bash
-cargo test --workspace          # 43 个测试，约 4 秒
+cargo test --workspace          # Rust：43 个测试，约 4 秒
 cargo clippy --workspace --all-targets -- -D warnings
+oracle/.venv/bin/python -m pytest oracle -q   # oracle：23 个测试，约 1 秒
 ```
 
 重新生成夹具图像（约 400 MB，release 下约 6 分钟；`--seed` 默认取各 suite 的规范种子）：
@@ -107,7 +120,9 @@ cargo test --release -- --ignored
 
 ## 测试
 
-`cargo test --workspace` 约四秒跑完 43 个测试：PSF 与光度学单元测试、每一种产出物类型的逐字节一致性、以及全部五个 suite 已提交真值星表的 schema 与星群校验。
+`cargo test --workspace` 约四秒跑完 43 个 Rust 测试：PSF 与光度学单元测试、每一种产出物类型的逐字节一致性、以及全部五个 suite 已提交真值星表的 schema 与星群校验。
+
+`pytest oracle` 约一秒跑完 23 个 oracle 测试：T0-2 的验收标准、`docs/FIXTURES.md` 里的匹配规则、以及各项指标的语义。它们断言的是**已提交的报告**，因此既不需要那 400 MB 图像、也不需要六分钟的重新生成；用 `python oracle/run_suites.py` 可从图像重建这些报告。
 
 两个全尺寸验收测试会重新生成全部五个真实 suite（约 10⁸ 次泊松抽样，release 下约 6 分钟），它们被标记为 `#[ignore]`，好让默认测试快到人们真的愿意跑——见 [D-011](docs/DECISIONS.md)。它们是被门控，不是被跳过：`cargo test --release -- --ignored`。
 

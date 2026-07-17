@@ -3,135 +3,137 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Phase](https://img.shields.io/badge/phase-0%20%C2%B7%20measurement%20apparatus-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](#测试)
 
-**Automated star processing for astrophotography.** Star detection → sky/foreground gating → tiered star masks → parametric star reduction (缩星) and enhancement (提亮星点), with deterministic batch output that round-trips losslessly into Photoshop.
+**中文** · [English](README.en.md)
 
-![A synthetic nightscape fixture beside its truth sky mask](docs/images/nightscape.png)
+**星空摄影自动星点处理。** 星点检测 → 天空/地景门控 → 分级星点蒙版 → 参数化缩星与提亮星点，批处理输出确定性一致，可无损往返 Photoshop 工作流。
 
-<sup>The `nightscape-fg` golden fixture (left, asinh-stretched for display) and its truth sky mask (right). Star operations are confined to the white region — structurally, not by convention. Both are generated from one u64 seed.</sup>
+![合成星野夹具与其真值天空蒙版](docs/images/nightscape.png)
 
-> 中文说明见 [docs/PRD-zh.md](docs/PRD-zh.md)。英文规格 [PRD.md](PRD.md) 为实现依据；两版冲突时以英文为准。
+<sup>`nightscape-fg` 金标准夹具（左，为显示做了 asinh 拉伸）与其真值天空蒙版（右）。星点操作只允许发生在白色区域——这是结构性保证，不是约定俗成。两者由同一个 u64 种子生成。</sup>
 
 ---
 
-## The problem
+## 问题
 
-Two operations dominate nightscape/deep-sky post-processing time, and both have the same root cause.
+星野/深空后期中最耗时的两类操作，根因是同一个。
 
-**Star reduction (缩星).** After stacking and stretching, stars look bloated against the nebulosity. The manual route — Photoshop Color Range → hand-refine mask → Minimum filter → repair dark halos and broken stars — costs **15–40 minutes per image** and is near-impossible to reproduce consistently across a series.
+**缩星。** 叠加与拉伸之后，星点相对星云显得臃肿。手工流程——Photoshop 色彩范围选区 → 手工修蒙版 → 最小值滤镜 → 修补黑边和断裂星点——单张耗时 **15–40 分钟**，且几乎不可能在一个系列的多张作品之间保持一致。
 
-**Star enhancement (提亮星点).** Making principal stars pop: duplicate layer → Gaussian blur → Screen → hand-paint a mask → recover colour on clipped cores. Equally tedious, equally unrepeatable.
+**提亮星点。** 让主要亮星突出：复制图层 → 高斯模糊 → 滤色混合 → 手绘蒙版只保留主星 → 恢复过曝星核的颜色。同样繁琐，同样不可复现。
 
-The bottleneck in both is the same thing: **producing an accurate, artifact-free star mask.** Once that exists, reduction and enhancement are cheap parametric operations. StarKit automates the mask — and everything downstream of it.
+两者的瓶颈是同一件事：**生成一张精确、无瑕疵的星点蒙版。** 有了它之后，缩星和提亮都只是廉价的参数化运算。StarKit 自动化的正是这张蒙版——以及它下游的一切。
 
-A third problem is specific to nightscape (星野) work: **an automatic star operation must never touch the foreground.** Trees, ridgelines and buildings have highlights that naive tools happily mistake for stars. In StarKit that is not a best-effort heuristic but a structural invariant (INV-1, below).
+第三个问题是星野摄影特有的：**任何自动星点操作都绝不能碰地景。** 树、山脊线、建筑的高光会被粗糙的工具当成星点。在 StarKit 里，这不是尽力而为的启发式，而是结构性不变量（见下方 INV-1）。
 
-## Project status
+## 项目状态
 
-**Phase 0 — building the measurement apparatus. There is no product code yet, and that is deliberate.**
+**Phase 0——正在搭建测量仪器。目前还没有产品代码，这是刻意的。**
 
-| Task | What | State |
+| 任务 | 内容 | 状态 |
 |---|---|---|
-| **T0-1** | Synthetic golden fixture generator | ✅ **done** |
-| T0-2 | Python oracle (photutils) — independent measurement | ⏳ next |
-| T0-3 | Catalog schema v1 freeze | ⏳ |
-| T0-4 | Local CI script (`ci.sh`) | ⏳ |
+| **T0-1** | 合成金标准夹具生成器 | ✅ **已完成** |
+| T0-2 | Python oracle（photutils）——独立测量 | ⏳ 下一步 |
+| T0-3 | 星表 schema v1 冻结 | ⏳ |
+| T0-4 | 本地 CI 脚本（`ci.sh`） | ⏳ |
 
-The rule (INV-5) is that **no algorithm ships before the instrument that can prove it works**. Quality claims like "98 % recall" are meaningless without golden data with exact known truth and an independent second measurement. So Phase 0 builds both, and `starkit-core` / `starkit-io` / `starkit-cli` stay empty until gate **G0** passes.
+规则（INV-5）是：**在能证明算法有效的仪器就位之前，不写算法。** 「召回率 98%」这类质量声明，如果没有已知精确真值的金标准数据加上一次独立的第二方测量，就是空话。所以 Phase 0 先把两者建起来，在关口 **G0** 通过之前，`starkit-core` / `starkit-io` / `starkit-cli` 一律保持为空。
 
-Full plan and task IDs: [ROADMAP.md](ROADMAP.md). Every non-trivial choice is logged in [docs/DECISIONS.md](docs/DECISIONS.md).
+完整计划与任务 ID 见 [ROADMAP.md](ROADMAP.md)。每一个非平凡的选择都记录在 [docs/DECISIONS.md](docs/DECISIONS.md)。
 
-## What exists today: golden fixtures
+## 目前已有：金标准夹具
 
-`starkit-fixtures` renders synthetic star fields whose truth is *exact by construction* — the truth catalog is the generator's input, not a measurement of its output. It deliberately shares no code with the algorithms it will judge (see [docs/FIXTURES.md](docs/FIXTURES.md)).
+`starkit-fixtures` 渲染合成星场，其真值**由构造决定即为精确**——真值星表是生成器的输入，而不是对其输出的测量。它刻意不与将来被它评判的算法共享任何代码（见 [docs/FIXTURES.md](docs/FIXTURES.md)）。
 
-![100% crops of the four star-field suites](docs/images/suites.png)
+![四个星场 suite 的 100% 裁切](docs/images/suites.png)
 
-<sup>100 % crops, asinh-stretched. Left to right: a clean field; Milky-Way-core crowding; close pairs at 0.5–2.0 × FWHM; a clipped star with its halo and bleed column.</sup>
+<sup>100% 裁切，asinh 拉伸。左上起顺时针：干净星场；银河核心级密度；过曝星及其光晕与溢出柱；间距 0.5–2.0 × FWHM 的近邻双星。</sup>
 
-| Suite | Size | Stars | Purpose |
+| Suite | 尺寸 | 星数 | 用途 |
 |---|---|---|---|
-| `basic-5k` | 4096² | 5,000 | clean field, peak SNR 3–200 · primary metrics suite |
-| `dense-core` | 4096² | 25,000 | Milky-Way-core density · deblending stress test |
-| `saturated` | 2048² | 500 | ~10 % clipped, with halo + bleed structure |
-| `pairs` | 2048² | 2,000 | separations 0.5–2.0 × FWHM · deblending limit |
-| `nightscape-fg` | 6144×4096 | 8,000 | procedural ridgeline + tree silhouettes, truth sky mask |
+| `basic-5k` | 4096² | 5,000 | 干净星场，峰值 SNR 3–200 · 主力指标 suite |
+| `dense-core` | 4096² | 25,000 | 银河核心级密度 · 去混叠压力测试 |
+| `saturated` | 2048² | 500 | 约 10% 过曝，带光晕与溢出结构 |
+| `pairs` | 2048² | 2,000 | 间距 0.5–2.0 × FWHM · 去混叠极限 |
+| `nightscape-fg` | 6144×4096 | 8,000 | 程序化山脊线 + 树木剪影，附真值天空蒙版 |
 
-Rendering model: Moffat + elliptical-Gaussian PSFs integrated by ×8 supersampling · power-law flux distribution · per-star colour tint · Poisson shot noise + Gaussian read noise · 16-bit quantization with saturation.
+渲染模型：Moffat + 椭圆高斯 PSF，×8 超采样积分 · 幂律流量分布 · 逐星颜色偏色 · 泊松散粒噪声 + 高斯读出噪声 · 16-bit 量化与饱和。
 
-Truth catalogs and generator params are committed under [`fixtures/expected/`](fixtures/expected); the images themselves are regenerable and gitignored, pinned by `MANIFEST.sha256`.
+真值星表与生成参数提交在 [`fixtures/expected/`](fixtures/expected)；图像本身可重新生成、不入库，由 `MANIFEST.sha256` 钉住哈希。
 
-## Quick start
+## 快速开始
 
 ```bash
-cargo test --workspace          # 43 tests, ~4 s
+cargo test --workspace          # 43 个测试，约 4 秒
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-Regenerate the fixture images (~400 MB, ~6 min in release; `--seed` defaults to each suite's canonical seed):
+重新生成夹具图像（约 400 MB，release 下约 6 分钟；`--seed` 默认取各 suite 的规范种子）：
 
 ```bash
 cargo run --release -p starkit-fixtures -- gen --suite all --out fixtures/generated
 ```
 
-Verify the full acceptance criteria — regenerates all five suites twice and checks byte-identity plus the committed manifest:
+验证完整验收标准——重新生成全部五个 suite 各两遍，检查逐字节一致以及与已提交 manifest 的吻合：
 
 ```bash
 cargo test --release -- --ignored
 ```
 
-## Repository layout
+## 仓库结构
 
-| Path | Role |
+| 路径 | 职责 |
 |---|---|
-| `crates/starkit-core` | pure algorithms: background, detect, mask, gate, reduce, enhance. I/O-free. |
-| `crates/starkit-io` | the only crate that touches files/codecs: TIFF/PNG/JPEG, ICC/EXIF, atomic writes. |
-| `crates/starkit-cli` | CLI (`starkit`), presets, batch, per-image JSON reports. |
-| `crates/starkit-fixtures` | golden star-field generator — independent code path, must not depend on `starkit-core`. |
-| `oracle/` | Python (photutils) independent measurement. Never shares code with the Rust side. |
-| `fixtures/expected/` | committed truth catalogs, params, reports, `MANIFEST.sha256`. |
-| `tools/` | documentation tooling — e.g. `make_previews.py`, which renders the images above. |
+| `crates/starkit-core` | 纯算法：背景建模、检测、蒙版、门控、缩星、提亮。无 I/O。 |
+| `crates/starkit-io` | 唯一接触文件与编解码的 crate：TIFF/PNG/JPEG、ICC/EXIF、原子写入。 |
+| `crates/starkit-cli` | 命令行（`starkit`）、预设、批处理、逐图 JSON 报告。 |
+| `crates/starkit-fixtures` | 金标准星场生成器——独立代码路径，不得依赖 `starkit-core`。 |
+| `oracle/` | Python（photutils）独立测量。永不与 Rust 侧共享代码。 |
+| `fixtures/expected/` | 已提交的真值星表、参数、报告、`MANIFEST.sha256`。 |
+| `tools/` | 文档工具——如 `make_previews.py`，用于渲染上面的预览图。 |
 
-## Invariants
+## 不变量
 
-These are release blockers, each covered by tests as soon as the relevant code exists.
+以下每一条都是发布阻塞项，且相关代码一旦存在就必须有测试覆盖。
 
-- **INV-1 Mask gating** — all star operations are confined to `sky_mask ∧ dilate(star_mask)`. Outside pixels are **bit-identical** to input, enforced structurally by a single compositor and verified with zero-tolerance golden diffs.
-- **INV-2 Determinism** — same input + same params ⇒ bit-identical output. No wall clock, no thread-order dependence; RNG only via explicit seeds.
-- **INV-3 Input safety** — input files are never modified; all writes go through one atomic temp→fsync→rename path. A crash never leaves a partial output.
-- **INV-4 Linear light** — photometric math runs in linear space; gamma/ICC conversion only at I/O boundaries.
-- **INV-5 Fixtures first** — no product code before fixtures and oracle pass Phase 0 acceptance.
-- **INV-6 Licensing** — permissive dependencies only (MIT / Apache-2.0 / BSD / Zlib / ISC). No StarNet weights or derivatives.
-- **INV-7 Core purity** — `starkit-core/src` uses no filesystem, network, clock, or env.
+- **INV-1 蒙版门控**——所有星点操作被限制在 `sky_mask ∧ dilate(star_mask)` 之内。此外的像素与输入**逐位一致**；由单一合成器结构性强制，并以零容差金标准 diff 验证。
+- **INV-2 确定性**——同输入 + 同参数 ⇒ 输出逐位一致。不依赖时钟，不依赖线程顺序；随机性一律经由显式种子。
+- **INV-3 输入安全**——输入文件永不被修改；所有写入走同一条原子路径 临时文件 → fsync → 重命名。崩溃绝不留下半成品。
+- **INV-4 线性光**——光度运算在线性空间进行；gamma/ICC 转换只在 I/O 边界发生。
+- **INV-5 夹具优先**——在夹具与 oracle 通过 Phase 0 验收之前，不写产品代码。
+- **INV-6 许可**——只用宽松许可依赖（MIT / Apache-2.0 / BSD / Zlib / ISC）。不引入 StarNet 权重及其衍生物。
+- **INV-7 core 纯净**——`starkit-core/src` 不使用文件系统、网络、时钟或环境变量。
 
-## Testing
+## 测试
 
-`cargo test --workspace` runs 43 tests in about four seconds: PSF/photometry unit tests, byte-identity of every emitted artifact type, and schema + population validation of the committed truth catalogs for all five suites.
+`cargo test --workspace` 约四秒跑完 43 个测试：PSF 与光度学单元测试、每一种产出物类型的逐字节一致性、以及全部五个 suite 已提交真值星表的 schema 与星群校验。
 
-The two full-scale acceptance tests regenerate all five real suites (~10⁸ Poisson draws, ~6 min in release) and are `#[ignore]`d so the default run stays fast enough that people actually run it — see [D-011](docs/DECISIONS.md). They are gated, not skipped: `cargo test --release -- --ignored`.
+两个全尺寸验收测试会重新生成全部五个真实 suite（约 10⁸ 次泊松抽样，release 下约 6 分钟），它们被标记为 `#[ignore]`，好让默认测试快到人们真的愿意跑——见 [D-011](docs/DECISIONS.md)。它们是被门控，不是被跳过：`cargo test --release -- --ignored`。
 
-**Determinism scope:** byte-identity is guaranteed for the same platform and toolchain, which is what INV-2 requires. Cross-*platform* identity is not guaranteed — `rand_distr`'s samplers route transcendentals through the platform libm — so the committed manifest pins this platform's output. See [D-012](docs/DECISIONS.md); how CI handles it is decided at T0-4.
+**确定性的适用范围：** 逐字节一致性保证的是同平台、同工具链，这正是 INV-2 所要求的。**跨平台**一致性并不保证——`rand_distr` 的采样器会把超越函数交给平台 libm——因此已提交的 manifest 钉住的是本平台的输出。详见 [D-012](docs/DECISIONS.md)；CI 如何处理这一点在 T0-4 决定。
 
-## Roadmap
+## 路线图
 
-| Phase | Scope | Gate |
+| 阶段 | 范围 | 关口 |
 |---|---|---|
-| **0** | Golden fixtures + Python oracle + local CI | G0 |
-| 1 | MVP CLI: I/O, detection, manual sky mask, star masks, reduction, batch | G1 |
-| 2 | Auto sky segmentation, enhancement, starless/stars-only, GUI | G2 |
-| 3 | Plate-solve constellation mode, ML starless, wgpu, PS plugin bridge | G3 |
+| **0** | 金标准夹具 + Python oracle + 本地 CI | G0 |
+| 1 | MVP CLI：I/O、检测、手动天空蒙版、星点蒙版、缩星、批处理 | G1 |
+| 2 | 自动天空分割、提亮、无星层/纯星层、GUI | G2 |
+| 3 | 天体测量星座模式、ML 去星、wgpu、PS 插件桥 | G3 |
 
-Phases are gate-locked: a phase cannot start before the previous gate checklist is complete.
+阶段是关口锁定的：上一个关口的检查清单未全部完成，下一阶段不得开始。
 
-## Documentation
+## 文档
 
-- [PRD.md](PRD.md) — authoritative functional specification (v1.0, approved) · [中文版](docs/PRD-zh.md)
-- [ROADMAP.md](ROADMAP.md) — phases, task IDs, acceptance criteria
-- [docs/FIXTURES.md](docs/FIXTURES.md) — fixture spec + catalog schema v1
-- [docs/DECISIONS.md](docs/DECISIONS.md) — append-only decision log
-- [CLAUDE.md](CLAUDE.md) — working rules for the implementation agent
+- [PRD.md](PRD.md) —— 权威功能规格（v1.0，已批准）· [中文版](docs/PRD-zh.md)
+- [ROADMAP.md](ROADMAP.md) —— 阶段、任务 ID、验收标准
+- [docs/FIXTURES.md](docs/FIXTURES.md) —— 夹具规格 + 星表 schema v1
+- [docs/DECISIONS.md](docs/DECISIONS.md) —— 只增不改的决策日志
+- [CLAUDE.md](CLAUDE.md) —— 实现方（Claude Code）的工作规则
 
-## License
+> 规格以英文版 [PRD.md](PRD.md) 为实现依据；中英两版冲突时以英文为准。
 
-MIT — see [LICENSE](LICENSE).
+## 许可
+
+MIT —— 见 [LICENSE](LICENSE)。

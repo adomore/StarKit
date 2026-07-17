@@ -66,7 +66,7 @@ oracle/.venv/bin/pip install -r oracle/requirements.txt
 - Errors: `thiserror` in library crates, `anyhow` only in binaries. No `unwrap`/`expect` on data-driven paths in `starkit-core`/`starkit-io` (tests exempt). Internal invariant breaches: `debug_assert!` plus a typed error.
 - Numerics: pixel buffers `f32`; statistics and accumulators `f64`. Every nonzero test tolerance is documented at the test site.
 - Coordinates (frozen): `(0.0, 0.0)` is the **center of the top-left pixel**; x → right, y → down. See `docs/FIXTURES.md`.
-- All code, comments, commits, and docs in English.
+- All code, comments, commits, and docs in English. **Exception (D-016): reader-facing docs may ship a Chinese mirror** — `README.md` (中文, the GitHub landing page) ⇄ `README.en.md`, and `PRD.md` ⇄ `docs/PRD-zh.md`. English remains authoritative on conflict. Everything else — code, comments, commit messages, ROADMAP, DECISIONS, FIXTURES — stays English-only.
 
 ## Definition of Done — every task
 

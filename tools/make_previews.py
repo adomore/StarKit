@@ -115,12 +115,13 @@ def main() -> None:
         (crop("pairs", 360), "pairs  0.5-2.0x FWHM"),
         (crop("saturated", 360, brightest_star("saturated")), "saturated  halo + bleed"),
     ]
+    # 2x2, not 1x4: a four-wide strip squeezes to ~110 px per tile in a README
+    # column, which leaves the labels illegible and the PSF detail invisible.
     gap = 6
-    strip = Image.new(
-        "RGB", (360 * len(tiles) + gap * (len(tiles) - 1), 360), (20, 20, 24)
-    )
+    strip = Image.new("RGB", (360 * 2 + gap, 360 * 2 + gap), (20, 20, 24))
     for i, (tile, text) in enumerate(tiles):
-        strip.paste(label(tile.convert("RGB"), text), (i * (360 + gap), 0))
+        col, row = i % 2, i // 2
+        strip.paste(label(tile.convert("RGB"), text), (col * (360 + gap), row * (360 + gap)))
     strip.save(OUT / "suites.png", optimize=True)
 
     for p in (OUT / "nightscape.png", OUT / "suites.png"):

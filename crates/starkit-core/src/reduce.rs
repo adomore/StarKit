@@ -156,6 +156,255 @@ pub fn morphological(
     Ok(cur)
 }
 
+// ===========================================================================
+// Method A — resynthesis (task T1-7, FR-5, the default)
+// ===========================================================================
+
+/// What resynthesis needs to know about one star. Narrower than a `Detection`:
+/// reduction depends on where a star is, how wide it is, and whether it is
+/// clipped — not on its flux or tier.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ReduceStar {
+    pub x: f64,
+    pub y: f64,
+    pub fwhm: f64,
+    pub saturated: bool,
+}
+
+impl From<&crate::detect::Detection> for ReduceStar {
+    fn from(d: &crate::detect::Detection) -> Self {
+        Self {
+            x: d.x,
+            y: d.y,
+            fwhm: d.fwhm,
+            saturated: d.saturated,
+        }
+    }
+}
+
+/// Resynthesis reduction parameters.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResynthParams {
+    /// Target FWHM fraction, `r ∈ [0, 1]`. `new_fwhm ≈ r × old_fwhm`; `r = 1`
+    /// leaves a star unchanged, `r = 0` removes it (the starless path, FR-7).
+    pub reduction: f64,
+    /// Leave saturated stars untouched. Their clipped cores have no measurable
+    /// profile — resampling a flat-topped hole would produce a smaller flat hole,
+    /// not a smaller star — so by default they are protected (FR-5's toggle).
+    pub protect_saturated: bool,
+    /// Local-background annulus, inner and outer radius as multiples of FWHM. The
+    /// annulus median is the background the star sits on; taking it from a ring
+    /// clear of the core keeps the star's own light out of its own background.
+    pub annulus_inner_k: f64,
+    pub annulus_outer_k: f64,
+    /// Processed disc radius as a multiple of FWHM — how far out the star is
+    /// removed and rebuilt. Must cover the star's real extent or a faint outer
+    /// ring of the original would survive as a halo.
+    pub core_k: f64,
+}
+
+impl Default for ResynthParams {
+    /// Halve the FWHM, protect saturated stars, annulus 2.5–4.0 × FWHM, process
+    /// out to 3.0 × FWHM.
+    fn default() -> Self {
+        Self {
+            reduction: 0.5,
+            protect_saturated: true,
+            annulus_inner_k: 2.5,
+            annulus_outer_k: 4.0,
+            core_k: 3.0,
+        }
+    }
+}
+
+/// Median of a small scratch buffer, by sorting with `total_cmp` (NaN-safe).
+fn median_of(buf: &mut [f64]) -> f64 {
+    if buf.is_empty() {
+        return f64::NAN;
+    }
+    buf.sort_by(f64::total_cmp);
+    let n = buf.len();
+    if n.is_multiple_of(2) {
+        0.5 * (buf[n / 2 - 1] + buf[n / 2])
+    } else {
+        buf[n / 2]
+    }
+}
+
+/// Bilinear sample of a plane at continuous coordinates, clamped at the edges.
+fn sample_bilinear(plane: &[f32], w: usize, h: usize, x: f64, y: f64) -> f64 {
+    let x = x.clamp(0.0, (w - 1) as f64);
+    let y = y.clamp(0.0, (h - 1) as f64);
+    let x0 = x.floor() as usize;
+    let y0 = y.floor() as usize;
+    let x1 = (x0 + 1).min(w - 1);
+    let y1 = (y0 + 1).min(h - 1);
+    let fx = x - x0 as f64;
+    let fy = y - y0 as f64;
+    let top = plane[y0 * w + x0] as f64 * (1.0 - fx) + plane[y0 * w + x1] as f64 * fx;
+    let bot = plane[y1 * w + x0] as f64 * (1.0 - fx) + plane[y1 * w + x1] as f64 * fx;
+    top * (1.0 - fy) + bot * fy
+}
+
+/// Local background under a star: the median of an annulus around it.
+///
+/// A median, not a mean: the annulus can clip a neighbour, and a mean would let
+/// that neighbour lift the estimate and leave a dark ring when the star is
+/// removed. Returns `None` if the annulus is empty (a star in the very corner),
+/// so the caller can leave that star alone rather than invent a background.
+fn annulus_background(
+    plane: &[f32],
+    w: usize,
+    h: usize,
+    star: &ReduceStar,
+    p: &ResynthParams,
+    scratch: &mut Vec<f64>,
+) -> Option<f64> {
+    let inner = p.annulus_inner_k * star.fwhm;
+    let outer = p.annulus_outer_k * star.fwhm;
+    let (inner2, outer2) = (inner * inner, outer * outer);
+    let x0 = (star.x - outer).floor().max(0.0) as usize;
+    let x1 = ((star.x + outer).ceil() as usize).min(w - 1);
+    let y0 = (star.y - outer).floor().max(0.0) as usize;
+    let y1 = ((star.y + outer).ceil() as usize).min(h - 1);
+
+    scratch.clear();
+    for y in y0..=y1 {
+        for x in x0..=x1 {
+            let d2 = (x as f64 - star.x).powi(2) + (y as f64 - star.y).powi(2);
+            if d2 >= inner2 && d2 <= outer2 {
+                let v = plane[y * w + x];
+                if v.is_finite() {
+                    scratch.push(v as f64);
+                }
+            }
+        }
+    }
+    if scratch.is_empty() {
+        None
+    } else {
+        Some(median_of(scratch))
+    }
+}
+
+/// Resynthesis reduction — method A, the default (FR-5).
+///
+/// Per star: estimate the local background from an annulus, remove the star by
+/// filling its disc with that background (the inpaint), then re-add the star's
+/// **own** profile scaled toward its centre by `reduction`. The rebuilt star is
+/// sampled from the real pixels, not a fitted model, so it keeps the true PSF
+/// shape, ellipticity and — applied per channel — colour, with none of the
+/// model-mismatch a Gaussian-or-Moffat fit would carry (T0-2 measured that at
+/// +14 % on Moffat stars).
+///
+/// # Why radial resampling gives `new_fwhm = r × old_fwhm`
+///
+/// The rebuilt star at offset `d` from the centre samples the original at `d / r`:
+/// `new(d) = old(d / r)`. The half-maximum of `old` is at radius `R`, so `new`
+/// reaches half-maximum at `d = r·R` — its FWHM is exactly `r` times the
+/// original, in the continuous limit. The peak (at `d = 0`) is preserved, so a
+/// reduced star stays as bright but becomes tighter, which is the point of 缩星.
+/// Bilinear interpolation broadens the very smallest stars slightly; see the
+/// `resynth_ac` note on the sampling floor.
+///
+/// # This module does not composite
+///
+/// Like [`morphological`], this returns a **modified plane**; only
+/// [`crate::gate::Gate::composite`] writes it into an image (INV-1).
+pub fn resynthesis(
+    plane: &[f32],
+    width: usize,
+    height: usize,
+    stars: &[ReduceStar],
+    params: &ResynthParams,
+) -> Result<Vec<f32>, Error> {
+    if width == 0 || height == 0 {
+        return Err(Error::EmptyImage);
+    }
+    if plane.len() != width * height {
+        return Err(Error::PlaneSize {
+            expected: width * height,
+            actual: plane.len(),
+        });
+    }
+    if !(params.reduction.is_finite() && (0.0..=1.0).contains(&params.reduction)) {
+        return Err(Error::InvalidParam("reduction must be in [0, 1]"));
+    }
+    if !(params.core_k.is_finite() && params.core_k > 0.0) {
+        return Err(Error::InvalidParam("core_k must be finite and positive"));
+    }
+
+    let r = params.reduction;
+    let mut out = plane.to_vec();
+    let mut scratch: Vec<f64> = Vec::new();
+
+    // Background per star, computed once from the *original* plane so a
+    // neighbour's inpaint cannot perturb it.
+    let mut bg: Vec<Option<f64>> = Vec::with_capacity(stars.len());
+    for s in stars {
+        let usable = s.x.is_finite() && s.y.is_finite() && s.fwhm.is_finite() && s.fwhm > 0.0;
+        let protected_ = params.protect_saturated && s.saturated;
+        bg.push(if usable && !protected_ {
+            annulus_background(plane, width, height, s, params, &mut scratch)
+        } else {
+            None
+        });
+    }
+
+    // Phase 1 — inpaint: fill each processed star's disc with its background,
+    // removing the original star.
+    for (s, b) in stars.iter().zip(&bg) {
+        let Some(b) = b else { continue };
+        let radius = params.core_k * s.fwhm;
+        let r2 = radius * radius;
+        let x0 = (s.x - radius).floor().max(0.0) as usize;
+        let x1 = ((s.x + radius).ceil() as usize).min(width - 1);
+        let y0 = (s.y - radius).floor().max(0.0) as usize;
+        let y1 = ((s.y + radius).ceil() as usize).min(height - 1);
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                if (x as f64 - s.x).powi(2) + (y as f64 - s.y).powi(2) <= r2 {
+                    out[y * width + x] = *b as f32;
+                }
+            }
+        }
+    }
+
+    // Phase 2 — re-add each shrunk star. `r = 0` is the starless path: nothing is
+    // added, so the inpaint stands alone.
+    if r > 0.0 {
+        for (s, b) in stars.iter().zip(&bg) {
+            let Some(b) = b else { continue };
+            let radius = params.core_k * s.fwhm;
+            let r2 = radius * radius;
+            let x0 = (s.x - radius).floor().max(0.0) as usize;
+            let x1 = ((s.x + radius).ceil() as usize).min(width - 1);
+            let y0 = (s.y - radius).floor().max(0.0) as usize;
+            let y1 = ((s.y + radius).ceil() as usize).min(height - 1);
+            for y in y0..=y1 {
+                for x in x0..=x1 {
+                    let (dx, dy) = (x as f64 - s.x, y as f64 - s.y);
+                    if dx * dx + dy * dy > r2 {
+                        continue;
+                    }
+                    // Sample the original profile at d/r — farther out, so the
+                    // rebuilt star is a shrunk copy.
+                    let src_x = s.x + dx / r;
+                    let src_y = s.y + dy / r;
+                    let signal = sample_bilinear(plane, width, height, src_x, src_y) - *b;
+                    // Only positive signal: adding a noise dip back would build a
+                    // faint dark speck, a small cousin of ringing.
+                    if signal > 0.0 {
+                        out[y * width + x] += signal as f32;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

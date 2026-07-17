@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 1. Gate G0 closed 2026-07-16** — T0-1…T0-4 AC green (`./ci.sh`), Q1 answered (D-026: Windows + standalone GUI), Q2 deferred (D-027), Q3/Q4/Q6 deferred (D-028). **INV-5 is discharged: product code may now be written.** Next task: **T1-3** (`starkit-core::detect`). T1-1/T1-2 done: `starkit-io` round-trips TIFF16 pixel-identically; `background` hits 0.19 ADU RMS error on `basic-5k`. D-031 is resolved (D-032): fixtures now embed a linear-sRGB ICC profile, so `starkit-io` decodes them to exact ADU/65535 and detection can be graded against truth through the real decoder. Standing debt: **G1 cannot close without the real corpus** (D-027) — FR-2's real-image AC, FR-4's photographer sign-off and T1-10 are all blocked on it.
+**Phase 1. Gate G0 closed 2026-07-16** — T0-1…T0-4 AC green (`./ci.sh`), Q1 answered (D-026: Windows + standalone GUI), Q2 deferred (D-027), Q3/Q4/Q6 deferred (D-028). **INV-5 is discharged: product code may now be written.** Next task: **T1-4** (`starkit-core::mask` + export). T1-1…T1-3 done: `starkit-io` round-trips TIFF16 pixel-identically; `background` hits 0.19 ADU RMS on `basic-5k`; `detect` meets all four FR-2 bars on `basic-5k` (99.94 % / 99.92 % / 0.098 px / 5.77 %). **T1-5 owes `nightscape-fg` a precision assertion** (D-034): its 35.7 % is the D-019 silhouette effect, and the sky-mask gate is the fix. Standing debt: **G1 cannot close without the real corpus** (D-027) — FR-2's real-image AC, FR-4's photographer sign-off and T1-10 are all blocked on it.
 
 ## Repository map
 

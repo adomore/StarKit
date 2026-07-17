@@ -11,6 +11,7 @@ thiserror = "2"
 serde_json.workspace = true
 
 [dev-dependencies]
-# Reading the fixture TIFF directly: the fixture is linear by construction but
-# untagged, so starkit-io would assume sRGB and apply a curve it never had.
 tiff = "0.11.3"
+# T1-3 grades detection through the real decoder (D-032). A dev-dependency only:
+# starkit-core itself stays I/O-free (INV-7).
+starkit-io = { path = "../starkit-io" }

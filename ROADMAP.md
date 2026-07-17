@@ -33,8 +33,9 @@ Goal: before any product code exists, build the instruments that make quality cl
 
 ## Phase 1 — MVP CLI (gate G1) — FR-1, FR-2, FR-3 (manual path), FR-4, FR-5 core, FR-8 minimal
 
-- [ ] **T1-1 `starkit-io`:** decode TIFF 8/16 + PNG + JPEG → linear f32 RGB; capture ICC bytes + EXIF; encode TIFF16 restoring both; atomic write path (the only write path). ICC backend decision → D-005.
+- [x] **T1-1 `starkit-io`:** decode TIFF 8/16 + PNG + JPEG → linear f32 RGB; capture ICC bytes + EXIF; encode TIFF16 restoring both; atomic write path (the only write path). ICC backend decision → D-005.
   **AC = FR-1:** no-op run pixel-identical for TIFF16; truncated/corrupt input fails cleanly with no partial file; atomic-semantics test (kill between temp write and rename leaves target untouched).
+  **Done** 2026-07-16. 46 tests (33 unit + 13 FR-1 acceptance). **No-op round-trip is pixel-identical on the real 4096² `basic-5k` fixture** — all 50.3M samples — not only on a toy image. Corrupt/truncated/non-image inputs each fail with the right typed variant and create no output file. Atomic path: temp beside target → fsync → rename, with failure-injection tests proving a failed write leaves the previous target byte-identical and leaves no debris; INV-3 checked by hashing the input before and after. Decisions: **D-029 resolves D-005 — no ICC backend at all** (working space is linear light in the source's *own* primaries; converting to a canonical space would clip wide-gamut data and break pixel-identity), curve round-trip proven exhaustively over all 65536 codes; **D-030** EXIF is preserved TIFF→TIFF (sub-IFD resolved and rewritten with correct offsets) but **dropped for JPEG/PNG→TIFF**, and GPS/Interop/MakerNote are never copied.
 - [ ] **T1-2 `starkit-core::background`:** tiled sigma-clipped background + noise map.
   **AC:** background RMS error within the tolerance documented at the test site on `basic-5k`; deterministic.
 - [ ] **T1-3 `starkit-core::detect`:** threshold + local maxima, subpixel centroid, elliptical FWHM, deblending, saturation flags, tiering.

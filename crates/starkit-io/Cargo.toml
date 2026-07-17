@@ -6,3 +6,12 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+thiserror = "2"
+# Codecs. All license-clean per INV-6 (see D-005 resolution / D-029).
+tiff = "0.11.3"
+png = "0.18.1"
+jpeg-decoder = "0.3.2"
+
+[dev-dependencies]
+tiff = "0.11.3"
+tempfile = "3"

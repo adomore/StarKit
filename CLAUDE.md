@@ -7,7 +7,7 @@ Automated star processing for astrophotography: detection → sky/foreground gat
 
 ## Current state
 
-**Phase 1. Gate G0 closed 2026-07-16** — T0-1…T0-4 AC green (`./ci.sh`), Q1 answered (D-026: Windows + standalone GUI), Q2 deferred (D-027), Q3/Q4/Q6 deferred (D-028). **INV-5 is discharged: product code may now be written.** Next task: **T1-1** (`starkit-io`). Standing debt: **G1 cannot close without the real corpus** (D-027) — FR-2's real-image AC, FR-4's photographer sign-off and T1-10 are all blocked on it.
+**Phase 1. Gate G0 closed 2026-07-16** — T0-1…T0-4 AC green (`./ci.sh`), Q1 answered (D-026: Windows + standalone GUI), Q2 deferred (D-027), Q3/Q4/Q6 deferred (D-028). **INV-5 is discharged: product code may now be written.** Next task: **T1-2** (`starkit-core::background`). T1-1 done: `starkit-io` decodes TIFF/PNG/JPEG → linear f32 and writes TIFF16 through the one atomic path; FR-1's pixel-identical no-op holds on the real fixture. Standing debt: **G1 cannot close without the real corpus** (D-027) — FR-2's real-image AC, FR-4's photographer sign-off and T1-10 are all blocked on it.
 
 ## Repository map
 

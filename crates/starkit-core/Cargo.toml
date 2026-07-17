@@ -7,4 +7,10 @@ license.workspace = true
 
 [dependencies]
 serde.workspace = true
+thiserror = "2"
 serde_json.workspace = true
+
+[dev-dependencies]
+# Reading the fixture TIFF directly: the fixture is linear by construction but
+# untagged, so starkit-io would assume sRGB and apply a curve it never had.
+tiff = "0.11.3"

@@ -3,6 +3,7 @@ name = "starkit-fixtures"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [lib]
 name = "starkit_fixtures"

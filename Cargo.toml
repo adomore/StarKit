@@ -10,6 +10,9 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+# Q5 answered: public release under MIT (D-014, supersedes D-003). `publish`
+# stays false — public source is not the same decision as a crates.io release.
+license = "MIT"
 publish = false
 
 [workspace.dependencies]

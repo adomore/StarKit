@@ -4,7 +4,6 @@
 //! See this crate's `CLAUDE.md` and the root `CLAUDE.md` for the invariants.
 //!
 //! Planned modules (created per ROADMAP task — do not pre-create):
-//! - `reduce`     (T1-6, T1-7) morphological + resynthesis star reduction
 //! - `enhance`    (Phase 2) glow / luminosity lift / color recovery
 //! - `decompose`  (Phase 2) starless / stars-only
 
@@ -12,6 +11,7 @@ pub mod background;
 pub mod detect;
 pub mod gate;
 pub mod mask;
+pub mod reduce;
 pub mod types;
 
 /// Errors from this crate's algorithms.

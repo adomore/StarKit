@@ -1,0 +1,6 @@
+numpy>=1.26
+scipy>=1.11
+astropy>=6.0
+photutils>=1.11
+pillow>=10
+tifffile>=2024.0

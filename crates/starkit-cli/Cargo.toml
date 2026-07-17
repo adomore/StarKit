@@ -1,0 +1,11 @@
+[package]
+name = "starkit-cli"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "starkit"
+path = "src/main.rs"
+
+[dependencies]

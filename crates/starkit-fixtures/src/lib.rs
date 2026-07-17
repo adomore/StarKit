@@ -17,6 +17,7 @@ pub mod catalog;
 pub mod emit;
 pub mod field;
 pub mod foreground;
+pub mod icc;
 pub mod params;
 pub mod psf;
 pub mod render;

@@ -12,6 +12,7 @@ Purpose: golden synthetic star fields with exact known truth, so detection and r
 - Background: constant level plus an optional small linear gradient.
 - Noise: Poisson (shot) on signal + background, plus Gaussian read noise σ_r. Seeded `rand_chacha` only.
 - Quantization: gain scale → clamp to [0, 65535] (saturation) → u16. Output written as 16-bit RGB TIFF.
+- **Colour space: the TIFF embeds a linear-sRGB ICC profile** (D-032) — sRGB primaries, identity tone curve. The image is linear by construction, so it says so: a decoder reading the profile applies no curve and recovers exactly `raw / 65535`, the ADU the truth catalog is written in. Without it a reader must guess, and `starkit-io` guesses sRGB. The profile's creation-date field is fixed at zero, not read from the clock (INV-2).
 
 ## Star population
 

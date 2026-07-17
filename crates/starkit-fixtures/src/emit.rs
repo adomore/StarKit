@@ -45,13 +45,30 @@ pub fn to_json_bytes<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, serde_js
     Ok(s.into_bytes())
 }
 
+/// TIFF tag 34675 — the embedded ICC profile.
+const TAG_ICC: u16 = 34675;
+
 /// Encode an interleaved RGB16 buffer as a 16-bit TIFF, in memory.
+///
+/// Embeds the linear-sRGB profile (D-032) so the file states its own colour
+/// space instead of leaving every reader to guess. Without it a decoder must
+/// assume something — `starkit-io` assumes sRGB, by its own documented rule —
+/// and would apply a tone curve this data never had.
 pub fn encode_tiff_rgb16(width: u32, height: u32, px: &[u16]) -> Result<Vec<u8>, String> {
+    let icc = crate::icc::linear_srgb();
     let mut buf = std::io::Cursor::new(Vec::new());
     {
         let mut enc = tiff::encoder::TiffEncoder::new(&mut buf)
             .map_err(|e| format!("tiff encoder init: {e}"))?;
-        enc.write_image::<tiff::encoder::colortype::RGB16>(width, height, px)
+        let mut image = enc
+            .new_image::<tiff::encoder::colortype::RGB16>(width, height)
+            .map_err(|e| format!("tiff image: {e}"))?;
+        image
+            .encoder()
+            .write_tag(tiff::tags::Tag::Unknown(TAG_ICC), icc.as_slice())
+            .map_err(|e| format!("tiff icc tag: {e}"))?;
+        image
+            .write_data(px)
             .map_err(|e| format!("tiff write: {e}"))?;
     }
     Ok(buf.into_inner())

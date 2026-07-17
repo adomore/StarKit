@@ -344,3 +344,44 @@ fn an_icc_profile_survives_the_round_trip_byte_for_byte() {
         "round trip through a gamma-2.2 profile drifted"
     );
 }
+
+// ---------------------------------------------------------------------------
+// D-031/D-032: the fixtures now state their own colour space
+// ---------------------------------------------------------------------------
+
+/// The integration D-031 was about: a fixture must decode as **linear**.
+///
+/// Before the fixtures embedded a profile, `starkit-io` followed its documented
+/// untagged⇒sRGB rule and applied a tone curve the data never had, so decoded
+/// values were not the ADU the truth catalog is written in. Neither component
+/// was wrong — the file simply did not say what it was. This asserts the fix
+/// end-to-end: decoded == raw/65535, exactly, with no curve in between.
+#[test]
+fn a_fixture_decodes_as_linear_not_as_srgb() {
+    let Some(path) = fixture() else {
+        eprintln!("skipping: fixtures/generated/basic-5k/image.tiff absent");
+        return;
+    };
+    let raw = read_tiff16_samples(&std::fs::read(&path).expect("read")).2;
+    let img = decode(&path).expect("decode");
+
+    assert!(
+        img.meta.icc.is_some(),
+        "the fixture carries no ICC profile — regenerate it (D-032)"
+    );
+    assert!(
+        img.meta.warnings.is_empty(),
+        "decoding a tagged fixture should need no assumptions, got: {:?}",
+        img.meta.warnings
+    );
+
+    // Exactness matters: an sRGB curve would put mid-grey at 0.214 instead of
+    // 0.5, so a loose tolerance would hide the very bug this guards.
+    for (i, (&r, &d)) in raw.iter().zip(&img.pixels).enumerate().step_by(9973) {
+        let want = r as f32 / 65535.0;
+        assert!(
+            (d - want).abs() < 1e-6,
+            "sample {i}: decoded {d} but raw/65535 = {want} — a curve was applied"
+        );
+    }
+}

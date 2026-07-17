@@ -5,6 +5,7 @@
 //! and exit codes come from one stable table ([`exit`]) so scripts can branch on
 //! them.
 
+mod bench;
 mod exit;
 mod pipeline;
 mod preset;
@@ -38,6 +39,8 @@ enum Command {
     Inspect(InspectArgs),
     /// Process every image in a folder, one report per image, skipping failures.
     Batch(BatchArgs),
+    /// Time the full pipeline on the 61 MP variant against the committed budget.
+    Bench(BenchArgs),
 }
 
 #[derive(Parser)]
@@ -88,12 +91,29 @@ struct BatchArgs {
     masks: bool,
 }
 
+#[derive(Parser)]
+struct BenchArgs {
+    /// The 61 MP fixture. Generate it with `starkit-fixtures gen --suite basic-61mp`.
+    #[arg(long, default_value = "fixtures/generated/basic-61mp/image.tiff")]
+    input: PathBuf,
+    /// Committed baseline JSON.
+    #[arg(long, default_value = "fixtures/expected/bench/basic-61mp.json")]
+    baseline: PathBuf,
+    /// Re-measure and overwrite the baseline instead of checking against it.
+    #[arg(long)]
+    update: bool,
+    /// Compute repetitions; the median is kept.
+    #[arg(long, default_value_t = 3)]
+    reps: usize,
+}
+
 fn main() {
     let cli = Cli::parse();
     let code = match cli.command {
         Command::Process(a) => run_process(a),
         Command::Inspect(a) => run_inspect(a),
         Command::Batch(a) => run_batch(a),
+        Command::Bench(a) => bench::run(&a.input, &a.baseline, a.update, a.reps),
     };
     std::process::exit(code);
 }

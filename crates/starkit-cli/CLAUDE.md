@@ -20,3 +20,4 @@ Numbers are a contract — add, never renumber. `tests/cli_ac.rs` asserts them t
 | 5 | `UNSUPPORTED` | decoded but an unhandled layout, or a mismatched sky mask |
 | 6 | `PROCESSING` | a processing step failed on valid data |
 | 7 | `BATCH_PARTIAL` | a batch finished but skipped ≥1 image (it did **not** abort) |
+| 8 | `BENCH_REGRESSION` | the 61 MP bench exceeded the hard-cap timing budget (T1-9) |

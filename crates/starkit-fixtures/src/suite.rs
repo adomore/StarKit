@@ -21,6 +21,11 @@ pub const SUITES: &[&str] = &[
 ];
 
 /// Canonical seed per suite (D-007). Never change without a D-entry.
+///
+/// `basic-61mp` has a seed too, but it is **not** one of the committed suites: it
+/// is the T1-9 performance variant, generated on demand and never hash-pinned
+/// (docs/FIXTURES.md). Keeping it here lets `gen --suite basic-61mp` reproduce
+/// the exact frame the baseline was measured on.
 pub fn canonical_seed(suite: &str) -> Option<u64> {
     Some(match suite {
         "basic-5k" => 1_000_001,
@@ -28,6 +33,7 @@ pub fn canonical_seed(suite: &str) -> Option<u64> {
         "saturated" => 1_000_003,
         "pairs" => 1_000_004,
         "nightscape-fg" => 1_000_005,
+        "basic-61mp" => 1_000_061,
         _ => return None,
     })
 }
@@ -89,6 +95,12 @@ fn base(suite: &str, seed: u64, width: u32, height: u32, count: u32) -> Params {
 pub fn params_for_suite(suite: &str, seed: u64) -> Option<Params> {
     Some(match suite {
         "basic-5k" => base(suite, seed, 4096, 4096, 5_000),
+
+        // The T1-9 performance variant: `basic-5k` scaled to 61 MP. 9568×6376 is
+        // ~3.64× the area of 4096², so the star count is scaled to match the same
+        // density (5000 × 3.64 ≈ 18 200). Never committed or hash-pinned — it is
+        // generated on demand for the bench only (docs/FIXTURES.md).
+        "basic-61mp" => base(suite, seed, 9568, 6376, 18_200),
 
         "dense-core" => {
             let mut p = base(suite, seed, 4096, 4096, 25_000);

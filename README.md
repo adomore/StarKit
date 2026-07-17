@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Phase](https://img.shields.io/badge/phase-1%20%C2%B7%20MVP%20CLI-blue)](ROADMAP.md)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](Cargo.toml)
-[![Tests](https://img.shields.io/badge/tests-255%20passing-brightgreen)](#测试)
+[![Tests](https://img.shields.io/badge/tests-257%20passing-brightgreen)](#测试)
 
 **中文** · [English](README.en.md)
 

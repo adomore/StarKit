@@ -3,7 +3,7 @@
 # StarKit local CI (task T0-4).
 #
 #   ./ci.sh           fmt, clippy, tests, oracle, fixture determinism smoke
-#   ./ci.sh --full    the above plus the ~6 min full-scale fixture AC tests
+#   ./ci.sh --full    the above plus the ~6 min fixture AC tests + 61 MP bench
 #   ./ci.sh --quick   skip the fixture smoke (no cargo run --release)
 #
 # Exits non-zero on the first failure. Every step prints what it is checking, so
@@ -127,6 +127,26 @@ fixture_smoke() {
 }
 
 # ---------------------------------------------------------------------------
+# Performance bench (T1-9): time the full pipeline on the 61 MP variant against
+# the committed budget. Generates the fixture on demand if absent (~1 min). The
+# failing gate is the 20 s hard cap, which is machine-independent enough to be a
+# real regression signal; the 10 s target and the reference number are advisory
+# (D-040, same cross-machine reasoning as the manifest note above).
+# ---------------------------------------------------------------------------
+BENCH_FIXTURE=fixtures/generated/basic-61mp/image.tiff
+
+bench_step() {
+  if [ ! -f "$BENCH_FIXTURE" ]; then
+    echo "generating basic-61mp (once)..."
+    if ! cargo run --release --quiet -p starkit-fixtures -- \
+         gen --suite basic-61mp --out fixtures/generated; then
+      return 1
+    fi
+  fi
+  cargo run --release --quiet -p starkit-cli -- bench --reps 1
+}
+
+# ---------------------------------------------------------------------------
 
 printf '%sStarKit CI%s  %s%s%s\n\n' "$GREEN" "$OFF" "$DIM" "$(uname -s 2>/dev/null || echo unknown)" "$OFF"
 
@@ -145,6 +165,8 @@ if [ "$FULL" -eq 1 ]; then
   # D-011: the full-scale fixture AC tests — regenerate all five suites twice,
   # check two-run byte-identity and the committed manifest. ~6 min.
   run_step "full fixture AC (--ignored)" cargo test --release --quiet -- --ignored
+  # T1-9: the 61 MP performance bench against the committed budget.
+  run_step "performance bench (61 MP)" bench_step
 fi
 
 echo

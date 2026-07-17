@@ -1,0 +1,13 @@
+{
+  "schema": "starkit-bench/1",
+  "fixture": "basic-61mp",
+  "target_seconds": 10.0,
+  "hard_cap_seconds": 20.0,
+  "reference": {
+    "compute_seconds": 8.33,
+    "megapixels": 61.0,
+    "stars": 18166,
+    "measured_on": "T1-9 reference machine (see D-040)",
+    "threads": 1
+  }
+}

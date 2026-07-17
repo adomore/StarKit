@@ -26,6 +26,8 @@ pub const PROCESSING: i32 = 6;
 /// A batch ran to completion but skipped at least one image (FR-8). The batch
 /// did **not** abort — this is how a caller learns some files failed.
 pub const BATCH_PARTIAL: i32 = 7;
+/// The bench exceeded the hard-cap timing budget (T1-9 / PRD §6).
+pub const BENCH_REGRESSION: i32 = 8;
 
 /// Map a decode/IO error to its stable exit code, so a single image and a batch
 /// classify failures the same way.

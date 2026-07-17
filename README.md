@@ -7,6 +7,10 @@
 
 **Automated star processing for astrophotography.** Star detection → sky/foreground gating → tiered star masks → parametric star reduction (缩星) and enhancement (提亮星点), with deterministic batch output that round-trips losslessly into Photoshop.
 
+![A synthetic nightscape fixture beside its truth sky mask](docs/images/nightscape.png)
+
+<sup>The `nightscape-fg` golden fixture (left, asinh-stretched for display) and its truth sky mask (right). Star operations are confined to the white region — structurally, not by convention. Both are generated from one u64 seed.</sup>
+
 > 中文说明见 [docs/PRD-zh.md](docs/PRD-zh.md)。英文规格 [PRD.md](PRD.md) 为实现依据；两版冲突时以英文为准。
 
 ---
@@ -41,6 +45,10 @@ Full plan and task IDs: [ROADMAP.md](ROADMAP.md). Every non-trivial choice is lo
 ## What exists today: golden fixtures
 
 `starkit-fixtures` renders synthetic star fields whose truth is *exact by construction* — the truth catalog is the generator's input, not a measurement of its output. It deliberately shares no code with the algorithms it will judge (see [docs/FIXTURES.md](docs/FIXTURES.md)).
+
+![100% crops of the four star-field suites](docs/images/suites.png)
+
+<sup>100 % crops, asinh-stretched. Left to right: a clean field; Milky-Way-core crowding; close pairs at 0.5–2.0 × FWHM; a clipped star with its halo and bleed column.</sup>
 
 | Suite | Size | Stars | Purpose |
 |---|---|---|---|
@@ -83,6 +91,7 @@ cargo test --release -- --ignored
 | `crates/starkit-fixtures` | golden star-field generator — independent code path, must not depend on `starkit-core`. |
 | `oracle/` | Python (photutils) independent measurement. Never shares code with the Rust side. |
 | `fixtures/expected/` | committed truth catalogs, params, reports, `MANIFEST.sha256`. |
+| `tools/` | documentation tooling — e.g. `make_previews.py`, which renders the images above. |
 
 ## Invariants
 

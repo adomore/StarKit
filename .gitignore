@@ -5,3 +5,7 @@ oracle/.venv/
 __pycache__/
 *.pyc
 .DS_Store
+# Real-image corpus: the photographer's copyrighted TIFFs and their companions.
+# Never committed to this public repo (docs/CORPUS.md §1, D-041). Only the text
+# manifest and the QA sheets under docs/ are tracked.
+/corpus/

@@ -34,6 +34,7 @@ pub fn canonical_seed(suite: &str) -> Option<u64> {
         "pairs" => 1_000_004,
         "nightscape-fg" => 1_000_005,
         "basic-61mp" => 1_000_061,
+        "basic-100mp" => 1_000_100,
         _ => return None,
     })
 }
@@ -101,6 +102,11 @@ pub fn params_for_suite(suite: &str, seed: u64) -> Option<Params> {
         // density (5000 × 3.64 ≈ 18 200). Never committed or hash-pinned — it is
         // generated on demand for the bench only (docs/FIXTURES.md).
         "basic-61mp" => base(suite, seed, 9568, 6376, 18_200),
+
+        // The 100 MP ceiling-validation variant (D-042): Hasselblad X2D 100C
+        // dimensions, 11656×8742 ≈ 101.9 MP, density-matched to ~30 000 stars.
+        // Same status as basic-61mp — on demand, never committed or hash-pinned.
+        "basic-100mp" => base(suite, seed, 11656, 8742, 30_000),
 
         "dense-core" => {
             let mut p = base(suite, seed, 4096, 4096, 25_000);

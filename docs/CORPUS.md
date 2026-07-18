@@ -43,7 +43,10 @@ corpus/
   that is really AdobeRGB is linearized through a slightly wrong curve, which is
   acceptable for per-channel star photometry — StarKit does no colorimetry, D-029
   — but note it.)
-- **Size:** ≤ 61 MP (the tested ceiling; the bench variant is 61 MP).
+- **Size:** ≤ 100 MP (D-042 raised the tested ceiling from 61 MP to validate the
+  photographer's 100 MP Hasselblad frames; full frames are accepted, no crop
+  needed). At 100 MP the pipeline runs at ~12 s (under the 20 s hard cap) and
+  ~4.7 GB peak — see the memory note in PRD §6.
 - **No JPEG in the primary corpus:** its blocking artifacts would confound a
   reduction-quality judgement. JPEG decodes fine for a one-off, but does not
   belong in the graded set.

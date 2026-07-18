@@ -21,7 +21,7 @@ The root cause of both pains is the same: **producing an accurate, artifact-free
 
 ## 2. Target users and workflow position
 
-- **Primary:** professional nightscape / deep-sky photographer. Photoshop-centric. Works on stacked, stretched **16-bit TIFF** files, typically 24–61 MP.
+- **Primary:** professional nightscape / deep-sky photographer. Photoshop-centric. Works on stacked, stretched **16-bit TIFF** files, typically 24–100 MP.
 - **Secondary:** MingJiang — CLI batch use, pipeline integration, maintenance.
 
 Workflow position: **after** stacking/stretching (Sequator / Siril / PS), **before or alongside** final grading in Photoshop. Therefore the tool must export layers and masks that drop cleanly back into PS (16-bit, ICC preserved, pixel-aligned).
@@ -58,7 +58,7 @@ All photometric operations run in linear light; gamma/ICC handled at the boundar
 
 ### FR-1 Image I/O
 
-- **In:** TIFF 8/16-bit RGB (single layer), PNG, JPEG. Embedded ICC honored (sRGB / AdobeRGB / ProPhoto). Tested up to 61 MP.
+- **In:** TIFF 8/16-bit RGB (single layer), PNG, JPEG. Embedded ICC honored (sRGB / AdobeRGB / ProPhoto). Tested up to 100 MP (D-042).
 - **Out:** TIFF 16-bit default. ICC profile and EXIF preserved. Never overwrites input by default; atomic temp-write + rename.
 - **Acceptance:** no-op run (all operations disabled) produces pixel-identical TIFF16 output. Corrupt/truncated input fails with a clean error, never a partial output file.
 
@@ -111,8 +111,8 @@ Before/after slider · 100 % zoom + pan · colored mask overlay · parameter sli
 
 ## 6. Non-functional requirements
 
-- **Performance:** full pipeline (detect + reduce + enhance) on a 61 MP 16-bit TIFF ≤ 10 s target / 20 s hard cap on an 8-core desktop CPU. Baseline measured by the Phase 1 benchmark harness and locked as a regression budget.
-- **Memory:** ≤ 2 × decoded image size + O(catalog).
+- **Performance:** full pipeline (detect + reduce + enhance) on a 61 MP 16-bit TIFF ≤ 10 s target / 20 s hard cap on an 8-core desktop CPU (measured 8.3 s, D-040). Baseline measured by the Phase 1 benchmark harness and locked as a regression budget. 100 MP is the tested size ceiling (D-042), running at ~12 s — over the 10 s target but under the 20 s hard cap.
+- **Memory:** peak ≈ 4 × the decoded (f32) image + O(catalog) — measured 4.1 × at both 61 and 100 MP (D-042). The original ≤ 2 × target is deferred pending memory optimization (buffer reuse / tiled pipeline), the same class of future work as rayon parallelism (D-040).
 - **Determinism:** no wall-clock or thread-order dependence in output; fixed seeds where randomness exists.
 - **Reliability:** input files are never modified; crash mid-run leaves no partial output (temp + atomic rename).
 - **Portability:** Windows 10+ and macOS 13+ as first-class targets (pending Q1); Linux kept green in CI.

@@ -32,7 +32,7 @@ Purpose: golden synthetic star fields with exact known truth, so detection and r
 | `pairs` | 2048² | 2,000 | pair separations 0.5–2.0 × FWHM |
 | `nightscape-fg` | 6144×4096 | 8,000 (sky region only) | procedural ridgeline + branch silhouettes at near-zero luminance with texture; truth sky mask emitted |
 
-A 61 MP performance variant `basic-61mp` (9568×6376, `basic-5k` parameters scaled) exists for the T1-9 bench only; it is generated on demand and never hash-pinned.
+Two performance variants exist for the bench and ceiling validation only — both `basic-5k` parameters scaled, generated on demand, **never committed or hash-pinned**: `basic-61mp` (9568×6376, the T1-9 ≤10 s budget reference) and `basic-100mp` (11656×8742 ≈ 101.9 MP, Hasselblad X2D 100C class, the D-042 tested-size ceiling).
 
 ## Outputs per fixture
 
